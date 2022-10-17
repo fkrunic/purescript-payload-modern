@@ -1,4 +1,4 @@
-module Payload.Test.Helpers where
+module Test.Helpers where
 
 import Prelude
 

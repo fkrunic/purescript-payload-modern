@@ -1,12 +1,12 @@
-module Payload.Test.Integration.Server.Routing where
+module Test.IntegrationTests.Server.Routing where
 
 import Prelude
 
 import Data.List (List)
 import Data.Maybe (Maybe(..))
 import Payload.Spec (GET, POST, PUT, Spec(Spec), DELETE)
-import Payload.Test.Helpers (respMatches, withRoutes)
-import Payload.Test.Helpers as Helpers
+import Test.Helpers (respMatches, withRoutes)
+import Test.Helpers as Helpers
 import Test.Unit (TestSuite, suite, test)
 
 tests :: TestSuite

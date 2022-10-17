@@ -1,4 +1,4 @@
-module Payload.Test.Integration.Client.QueryParams where
+module Test.IntegrationTests.Client.QueryParams where
 
 import Prelude
 
@@ -9,8 +9,8 @@ import Foreign.Object as Object
 import Payload.Client (mkClient)
 import Payload.ResponseTypes (Empty(..))
 import Payload.Spec (DELETE, GET, POST, PUT, Spec(Spec), HEAD)
-import Payload.Test.Config (TestConfig)
-import Payload.Test.Helpers (bodyEquals, withRoutes)
+import Test.Config (TestConfig)
+import Test.Helpers (bodyEquals, withRoutes)
 import Test.Unit (TestSuite, suite, test)
   
 tests :: TestConfig -> TestSuite

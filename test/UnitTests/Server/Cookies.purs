@@ -1,4 +1,4 @@
-module Payload.Test.Unit.Server.Cookies where
+module Test.UnitTests.Server.Cookies where
 
 import Prelude
 

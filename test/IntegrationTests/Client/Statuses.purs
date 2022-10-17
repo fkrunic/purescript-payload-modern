@@ -1,4 +1,4 @@
-module Payload.Test.Integration.Client.Statuses where
+module Test.IntegrationTests.Client.Statuses where
 
 import Prelude
 
@@ -7,8 +7,8 @@ import Effect.Aff (Aff, error, throwError)
 import Payload.Client (ClientError(..), ClientResponse, mkClient)
 import Payload.Server.Response as Response
 import Payload.Spec (GET, Spec(Spec))
-import Payload.Test.Config (TestConfig)
-import Payload.Test.Helpers (bodyEquals, withRoutes)
+import Test.Config (TestConfig)
+import Test.Helpers (bodyEquals, withRoutes)
 import Test.Unit (TestSuite, suite, test)
 import Test.Unit.Assert as Assert
 

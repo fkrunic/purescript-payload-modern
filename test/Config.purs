@@ -1,4 +1,4 @@
-module Payload.Test.Config where
+module Test.Config where
 
 import Payload.Client as Client
 

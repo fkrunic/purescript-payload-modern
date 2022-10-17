@@ -1,12 +1,12 @@
-module Payload.Test.Integration.Server.QueryParams where
+module Test.IntegrationTests.Server.QueryParams where
 
 import Prelude
 
 import Data.Maybe (Maybe(..))
 import Foreign.Object (Object)
 import Payload.Spec (GET, POST, Spec(..))
-import Payload.Test.Helpers (respMatches, withRoutes)
-import Payload.Test.Helpers as Helpers
+import Test.Helpers (respMatches, withRoutes)
+import Test.Helpers as Helpers
 import Test.Unit (TestSuite, suite, test)
 
 tests :: TestSuite

@@ -1,4 +1,4 @@
-module Payload.Test.IntegrationTests.Client.Options where
+module Test.IntegrationTests.Client.Options where
 
 import Prelude
 
@@ -11,8 +11,8 @@ import Payload.Headers (Headers)
 import Payload.Headers as Headers
 import Payload.Server.Guards as Guards
 import Payload.Spec (type (:), GET, Guards, Nil, Spec(..))
-import Payload.Test.Config (TestConfig)
-import Payload.Test.Helpers (bodyEquals, withServer)
+import Test.Config (TestConfig)
+import Test.Helpers (bodyEquals, withServer)
 import Test.Unit (TestSuite, suite, test)
 
 getHeader :: forall r. String -> {guards :: {headers :: Headers} | r} -> Aff String

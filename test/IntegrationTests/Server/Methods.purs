@@ -1,4 +1,4 @@
-module Payload.Test.Integration.Server.Methods where
+module Test.IntegrationTests.Server.Methods where
 
 import Prelude
 
@@ -7,8 +7,8 @@ import Payload.ResponseTypes (Empty(..))
 import Payload.Server.Response as Response
 import Payload.Server.Status as Status
 import Payload.Spec (DELETE, GET, HEAD, POST, PUT, Spec(Spec), OPTIONS)
-import Payload.Test.Helpers (respMatches, withRoutes)
-import Payload.Test.Helpers as Helpers
+import Test.Helpers (respMatches, withRoutes)
+import Test.Helpers as Helpers
 import Test.Unit (TestSuite, suite, test)
   
 tests :: TestSuite

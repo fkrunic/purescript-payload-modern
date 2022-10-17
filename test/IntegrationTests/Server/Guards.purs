@@ -1,4 +1,4 @@
-module Payload.Test.Integration.Server.Guards where
+module Test.IntegrationTests.Server.Guards where
 
 import Prelude
 
@@ -12,8 +12,8 @@ import Payload.Headers as Headers
 import Payload.ResponseTypes (Failure(..))
 import Payload.Server.Guards as Guards
 import Payload.Spec (type (:), GET, Guards, Nil, Routes, Spec(Spec))
-import Payload.Test.Helpers (get_, respMatches, withServer)
-import Payload.Test.Helpers as Helpers
+import Test.Helpers (get_, respMatches, withServer)
+import Test.Helpers as Helpers
 import Test.Unit (TestSuite, suite, test)
 import Test.Unit.Assert as Assert
 

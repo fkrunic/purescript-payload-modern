@@ -1,4 +1,4 @@
-module Payload.Test.Integration.Server.Error where
+module Test.IntegrationTests.Server.Error where
 
 import Prelude
 
@@ -7,8 +7,8 @@ import Data.Map as Map
 import Payload.ResponseTypes (RawResponse, Response, ResponseBody(..))
 import Payload.Server.Response as Response
 import Payload.Spec (GET, Spec(Spec))
-import Payload.Test.Helpers (respMatches, withRoutes)
-import Payload.Test.Helpers as Helpers
+import Test.Helpers (respMatches, withRoutes)
+import Test.Helpers as Helpers
 import Test.Unit (TestSuite, suite, test)
 import Test.Unit.Assert as Assert
 

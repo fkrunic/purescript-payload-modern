@@ -1,4 +1,4 @@
-module Payload.Test.Integration.Server.Status where
+module Test.IntegrationTests.Server.Status where
 
 import Prelude
 
@@ -6,8 +6,8 @@ import Effect.Aff (Aff)
 import Payload.ResponseTypes (Response)
 import Payload.Server.Response as Response
 import Payload.Spec (GET, Spec(Spec))
-import Payload.Test.Helpers (respMatches, withRoutes)
-import Payload.Test.Helpers as Helpers
+import Test.Helpers (respMatches, withRoutes)
+import Test.Helpers as Helpers
 import Test.Unit (TestSuite, suite, test)
   
 tests :: TestSuite

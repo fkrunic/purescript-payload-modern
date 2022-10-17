@@ -1,4 +1,4 @@
-module Payload.Test.Unit.Server.Internal.OmitEmpty where
+module Test.UnitTests.Server.Internal.OmitEmpty where
 
 import Prelude
 

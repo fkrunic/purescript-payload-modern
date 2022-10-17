@@ -1,4 +1,4 @@
-module Payload.Test.Unit.Internal.QueryParsing where
+module Test.UnitTests.Internal.QueryParsing where
 
 import Prelude
 

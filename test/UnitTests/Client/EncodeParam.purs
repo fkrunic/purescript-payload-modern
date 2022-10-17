@@ -1,4 +1,4 @@
-module Payload.Test.Unit.Client.EncodeParam where
+module Test.UnitTests.Client.EncodeParam where
 
 import Prelude
 

@@ -1,4 +1,4 @@
-module Payload.Test.IntegrationTests.Client.Methods where
+module Test.IntegrationTests.Client.Methods where
 
 import Prelude
 
@@ -6,8 +6,8 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Payload.Client (mkClient)
 import Payload.ResponseTypes (Empty(..))
 import Payload.Spec (DELETE, GET, HEAD, POST, PUT, Routes, Spec(Spec), OPTIONS)
-import Payload.Test.Config (TestConfig)
-import Payload.Test.Helpers (bodyEquals, withRoutes)
+import Test.Config (TestConfig)
+import Test.Helpers (bodyEquals, withRoutes)
 import Test.Unit (TestSuite, suite, test)
   
 tests :: TestConfig -> TestSuite

@@ -1,4 +1,4 @@
-module Payload.Test.Unit.Server.Internal.Query where
+module Test.UnitTests.Server.Internal.Query where
 
 import Prelude
 

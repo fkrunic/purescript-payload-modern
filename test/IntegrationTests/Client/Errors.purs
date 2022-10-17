@@ -1,4 +1,4 @@
-module Payload.Test.IntegrationTests.Client.Errors where
+module Test.IntegrationTests.Client.Errors where
 
 import Prelude
 
@@ -10,8 +10,8 @@ import Payload.Headers as Headers
 import Payload.ResponseTypes (Response(..))
 import Payload.Server.Response as Response
 import Payload.Spec (GET, Spec(Spec))
-import Payload.Test.Config (TestConfig)
-import Payload.Test.Helpers (withRoutes)
+import Test.Config (TestConfig)
+import Test.Helpers (withRoutes)
 import Test.Unit (TestSuite, suite, test)
 import Test.Unit.Assert as Assert
   

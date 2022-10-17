@@ -1,4 +1,4 @@
-module Payload.Test.Unit.Client.QueryParams where
+module Test.UnitTests.Client.QueryParams where
 
 import Prelude
 

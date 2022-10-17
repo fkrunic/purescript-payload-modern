@@ -1,7 +1,8 @@
 "use strict";
 
+import qs from "querystring"
+
 export function querystringParse (inputStr) {
-  var qs = require('querystring');
   var parsed = qs.parse(inputStr);
   for (var prop in parsed) {
     if (Object.prototype.hasOwnProperty.call(parsed, prop)) {
