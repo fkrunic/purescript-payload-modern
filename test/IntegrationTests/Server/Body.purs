@@ -3,8 +3,7 @@ module Test.IntegrationTests.Server.Body where
 import Prelude
 
 import Data.Maybe (Maybe(..), maybe)
-import Foreign.Object (Object)
-import Payload.Spec (GET, POST, PUT, Spec(..), DELETE)
+import Payload.Spec (POST, PUT, Spec(..), DELETE)
 import Test.Helpers (respMatches, withRoutes)
 import Test.Helpers as Helpers
 import Test.Unit (TestSuite, suite, test)

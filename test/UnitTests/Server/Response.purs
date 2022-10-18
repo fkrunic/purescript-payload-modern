@@ -123,7 +123,6 @@ tests = suite "Response" do
           Assert.equal (Right headers) (res >>= _headers)
         test "setting same header in different case in own response -> default header is not added" do
           let headers = Headers.fromFoldable [Tuple "cOnTeNt-TyPe" "magic"]
-          let expected = Headers.fromFoldable [Tuple "content-type" "magic"]
           res <- encode (Response { status: Status.ok, headers, body: "foo" })
           Assert.equal (Right headers) (res >>= _headers)
         test "added header names are converted to lower case" do

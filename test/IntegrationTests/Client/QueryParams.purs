@@ -81,7 +81,7 @@ tests cfg = do
     test "HEAD succeeds" $ do
       let spec = Spec :: _ { foo :: HEAD "/foo?key=<key>&<..rest>"
                                      { query :: { key :: Int, rest :: Object (Array String) }} }
-      let handlers = { foo: \{ query: { key, rest } } -> pure $ Empty }
+      let handlers = { foo: \{ query: _ } -> pure $ Empty }
       withRoutes spec handlers do
         let client = mkClient cfg.clientOpts spec
         res <- client.foo { query: { key: 1, rest: Object.fromFoldable [Tuple "a" ["a"]] } }
