@@ -25,12 +25,6 @@ type ResponseContent r
 type HttpStatus
   = { code :: Int, reason :: String }
 
-derive instance newtypeResponse :: Newtype (Response a) _
-instance eqResponse :: Eq a => Eq (Response a) where
-  eq (Response r1) (Response r2) = r1 == r2
-instance showResponse :: Show a => Show (Response a) where
-  show (Response r) = show r
-
 -- | An empty response body
 data Empty
   = Empty
@@ -43,9 +37,6 @@ newtype Json a
 data Failure
   = Forward String
   | Error RawResponse
-instance showFailure :: Show Failure where
-  show (Forward s) = "Forward '" <> s <> "'"
-  show (Error e) = "Error " <> show e
 
 -- | All server responses ultimately resolve into this type. 
 type RawResponse
@@ -56,18 +47,32 @@ data ResponseBody
   = StringBody String
   | StreamBody UnsafeStream
   | EmptyBody
+
 data UnsafeStream
+
+-- | Internally handlers and guards all de-sugar into this type.
+type Result a
+  = ExceptT Failure Aff a
+
+derive instance newtypeResponse :: Newtype (Response a) _
+
+instance eqResponse :: Eq a => Eq (Response a) where
+  eq (Response r1) (Response r2) = r1 == r2
+  
+instance showResponse :: Show a => Show (Response a) where
+  show (Response r) = show r  
+
+instance showFailure :: Show Failure where
+  show (Forward s) = "Forward '" <> s <> "'"
+  show (Error e) = "Error " <> show e
 
 instance eqResponseBody :: Eq ResponseBody where
   eq (StringBody s1) (StringBody s2) = s1 == s2
   eq EmptyBody EmptyBody = true
   eq (StreamBody _) (StreamBody _) = false
   eq _ _ = false
+  
 instance showResponseBody :: Show ResponseBody where
   show (StringBody s) = s
   show EmptyBody = "EmptyBody"
   show (StreamBody _) = "StreamBody"
-
--- | Internally handlers and guards all de-sugar into this type.
-type Result a
-  = ExceptT Failure Aff a
