@@ -31,8 +31,6 @@ to generate this file without the comments in this block.
   , "media-types"
   , "newtype"
   , "node-buffer"
-  , "node-fs"
-  , "node-fs-aff"
   , "node-http"
   , "node-path"
   , "node-streams"

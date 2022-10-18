@@ -395,7 +395,7 @@ mkResponse ::
 mkResponse _ _ aff = do
   (handlerResp :: handlerRes) <- lift $ aff
   (specResp :: Response res) <- Resp.toSpecResponse (Proxy :: _ docRoute) handlerResp
-  (rawResp :: RawResponse) <- Resp.encodeResponse specResp
+  (rawResp :: RawResponse) <- except $ Resp.encodeResponse specResp
   pure rawResp
 
 readBody :: HTTP.Request -> Aff String

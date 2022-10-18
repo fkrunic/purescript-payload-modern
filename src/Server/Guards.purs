@@ -9,7 +9,7 @@ module Payload.Server.Guards
   ) where
 
 import Prelude
-import Control.Monad.Except (lift, throwError)
+import Control.Monad.Except.Trans (except, lift, throwError)
 import Data.Either (Either(..))
 import Data.Map (Map)
 import Data.Symbol (class IsSymbol)
@@ -45,14 +45,14 @@ else instance toGuardValEitherResponseVal ::
   EncodeResponse err =>
   ToGuardVal (Either (Response err) a) a where
   toGuardVal (Left res) = do
-    raw <- Resp.encodeResponse res
+    raw <- except $ Resp.encodeResponse res
     throwError (Error raw)
   toGuardVal (Right res) = pure res
 else instance toGuardValEitherValVal ::
   EncodeResponse err =>
   ToGuardVal (Either err a) a where
   toGuardVal (Left res) = do
-    raw <- Resp.encodeResponse (Resp.internalError res)
+    raw <- except $ Resp.encodeResponse (Resp.internalError res)
     throwError (Error raw)
   toGuardVal (Right res) = pure res
 else instance toGuardValIdentity :: ToGuardVal a a where

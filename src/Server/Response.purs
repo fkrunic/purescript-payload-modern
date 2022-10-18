@@ -75,7 +75,7 @@ module Payload.Server.Response
   ) where
 
 import Prelude
-import Control.Monad.Except (throwError)
+import Control.Monad.Except.Trans (except, throwError)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Newtype (over)
@@ -132,25 +132,25 @@ else instance toSpecResponseEitherFailureResponse :: EncodeResponse a => ToSpecR
 
 else instance toSpecResponseEitherResponseVal :: EncodeResponse err => ToSpecResponse docRoute (Either (Response err) a) a where
   toSpecResponse _ (Left res) = do
-    raw <- encodeResponse res
+    raw <- except $ encodeResponse res
     throwError (Error raw)
   toSpecResponse _ (Right res) = pure (ok res)
 
 else instance toSpecResponseEitherResponseResponse :: EncodeResponse err => ToSpecResponse docRoute (Either (Response err) (Response a)) a where
   toSpecResponse _ (Left res) = do
-    raw <- encodeResponse res
+    raw <- except $ encodeResponse res
     throwError (Error raw)
   toSpecResponse _ (Right res) = pure res
 
 else instance toSpecResponseEitherValVal :: (EncodeResponse a, EncodeResponse err) => ToSpecResponse docRoute (Either err a) a where
   toSpecResponse _ (Left res) = do
-    raw <- encodeResponse (internalError res)
+    raw <- except $ encodeResponse (internalError res)
     throwError (Error raw)
   toSpecResponse _ (Right res) = pure (ok res)
 
 else instance toSpecResponseEitherValResponse :: (EncodeResponse a, EncodeResponse err) => ToSpecResponse docRoute (Either err (Response a)) a where
   toSpecResponse _ (Left res) = do
-    raw <- encodeResponse (internalError res)
+    raw <- except $ encodeResponse (internalError res)
     throwError (Error raw)
   toSpecResponse _ (Right res) = pure res
 
@@ -207,7 +207,7 @@ else instance toSpecResponseFail ::
 -- | spec under the "body" field must implement EncodeResponse. This is also
 -- | a good place to add a Content-Type header for the encoded response.
 class EncodeResponse r where
-  encodeResponse :: Response r -> Result RawResponse
+  encodeResponse :: Response r -> Either Failure RawResponse
 
 instance encodeResponseResponseBody :: EncodeResponse ResponseBody where
   encodeResponse = pure

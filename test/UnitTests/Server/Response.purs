@@ -1,7 +1,6 @@
 module Test.UnitTests.Server.Response where
 
 import Prelude
-import Control.Monad.Except (runExceptT)
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..), note)
 import Data.Maybe (Maybe(..))
@@ -31,10 +30,10 @@ _body :: RawResponse -> Either String ResponseBody
 _body res = Right $ (unwrap res).body
 
 encodeOk :: forall a. EncodeResponse a => a -> Aff (Either String RawResponse)
-encodeOk = (map $ lmap show) <<< runExceptT <<< encodeResponse <<< Response.ok
+encodeOk = Response.ok >>> encode
 
 encode :: forall a. EncodeResponse a => Response a -> Aff (Either String RawResponse)
-encode = (map $ lmap show) <<< runExceptT <<< encodeResponse
+encode = encodeResponse >>> lmap show >>> pure
 
 tests :: TestSuite
 tests =
