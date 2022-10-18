@@ -42,7 +42,6 @@ to generate this file without the comments in this block.
   , "prelude"
   , "record"
   , "refs"
-  , "simple-json"
   , "strings"
   , "stringutils"
   , "test-unit"
