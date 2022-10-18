@@ -327,7 +327,7 @@ printResponse (Right {status, statusText, headers, body}) =
                 | otherwise = b
 
 lookupHeader :: String -> Array ResponseHeader -> Maybe String
-lookupHeader key headers = Array.findMap matchingHeaderVal headers
+lookupHeader _ headers = Array.findMap matchingHeaderVal headers
   where
     matchingHeaderVal :: ResponseHeader -> Maybe String
     matchingHeaderVal (ResponseHeader k val) | k == "content-type" = Just val
@@ -378,7 +378,7 @@ class EncodeOptionalBody
                   -> Maybe RequestBody.RequestBody
 
 instance encodeOptionalBodyUndefined :: EncodeOptionalBody Undefined payload where
-  encodeOptionalBody _ payload = Nothing
+  encodeOptionalBody _ _ = Nothing
 else instance encodeOptionalBodyDefined ::
   ( TypeEquals (Record payload) { body :: body | rest }
   , EncodeBody body
@@ -399,7 +399,7 @@ class EncodeOptionalQuery
 instance encodeOptionalQueryUndefined ::
   ( EncodeQuery url ()
   ) => EncodeOptionalQuery url Undefined payload where
-  encodeOptionalQuery url _ payload = encodeQuery url {}
+  encodeOptionalQuery url _ _ = encodeQuery url {}
 else instance encodeOptionalQueryDefined ::
   ( TypeEquals (Record payload) { query :: Record query | rest }
   , EncodeQuery url query
@@ -421,13 +421,13 @@ class EncodeUrlWithParams
 instance encodeUrlWithParamsUndefined ::
   ( PayloadUrl.EncodeUrl url ()
   ) => EncodeUrlWithParams url RowList.Nil payload where
-  encodeUrlWithParams options url _ payload = encodeUrl options url {}
+  encodeUrlWithParams options url _ _ = encodeUrl options url {}
 else instance encodeUrlWithParamsDefined ::
   ( TypeEquals (Record payload) { params :: Record params | rest }
   , ListToRow rl params
   , PayloadUrl.EncodeUrl url params
   ) => EncodeUrlWithParams url rl payload where
-  encodeUrlWithParams options url params payload = encodeUrl options url (to payload).params
+  encodeUrlWithParams options url _ payload = encodeUrl options url (to payload).params
 
 encodeUrl :: forall url params
   . PayloadUrl.EncodeUrl url params

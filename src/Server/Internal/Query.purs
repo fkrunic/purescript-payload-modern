@@ -44,7 +44,7 @@ instance matchQueryConsMulti ::
   , DecodeQueryParamMulti valType
   , TypeEquals (Record from') (Record to)
   ) => MatchQuery (QueryCons (Multi ourKey) QueryNil) params from to where
-  matchQuery _ queryType query queryObj =
+  matchQuery _ _ query queryObj =
     case decodeQueryParamMulti queryObj of
       Left errors -> Left $ show errors
       Right decoded -> Right (to $ Record.insert (Proxy :: Proxy ourKey) decoded query)

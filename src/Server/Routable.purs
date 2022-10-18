@@ -266,12 +266,8 @@ instance routableListConsRoutes ::
 insertRoute :: List Segment -> RawHandler -> RoutingTrie -> Either String RoutingTrie
 insertRoute route handler trie = lmap wrapError $ Trie.insert {route, handler} route trie
   where
-    handlerEntry = { route, handler }
-
     wrapError :: String -> String
-    wrapError e = "Could not insert route for path '" <>
-                  show route <>
-                  "' into routing trie"
+    wrapError _ = "Could not insert route for path '" <> show route <> "' into routing trie"
 
 orElse :: forall a b c. (a -> c) -> Either a c -> Either b c
 orElse _ (Right v) = Right v 

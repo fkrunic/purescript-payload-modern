@@ -92,7 +92,7 @@ class RunGuards
                -> Result (Record routeGuardSpec)
 
 instance runGuardsNil :: RunGuards GNil guardsSpec allGuards routeGuardSpec routeGuardSpec where
-  runGuards _ _ allGuards results req = pure results
+  runGuards _ _ _ results _ = pure results
 
 instance runGuardsCons ::
   ( IsSymbol name

@@ -36,7 +36,7 @@ instance matchUrlMulti ::
   , Row.Lacks key rest
   , DecodeSegments valType
   ) => MatchUrl (UrlCons (Multi key) UrlNil) params rest where
-  match _ paramsType params segments = case decodeSegments segments of
+  match _ _ params segments = case decodeSegments segments of
     Left errors -> Left $ show errors
     Right decoded -> Right $ Record.insert (Proxy :: Proxy key) decoded params
 
@@ -48,7 +48,7 @@ instance matchUrlConsKey ::
   , Row.Lacks key from
   , DecodeParam valType
   ) => MatchUrl (UrlCons (Key key) rest) params from where
-  match _ paramsType params Nil = Left "Decoding error at key"
+  match _ _ _ Nil = Left "Decoding error at key"
   match _ paramsType params (segment : rest) = case decodeParam segment of
     Left errors -> Left $ show errors
     Right decoded -> let newParams = Record.insert (Proxy :: Proxy key) decoded params in
@@ -58,6 +58,6 @@ instance matchUrlConsLit ::
   ( IsSymbol lit
   , MatchUrl rest params from
   ) => MatchUrl (UrlCons (Lit lit) rest) params from where
-  match _ paramsType params Nil = Left "Decoding error at literal"
-  match _ paramsType params (segment : rest) =
+  match _ _ _ Nil = Left "Decoding error at literal"
+  match _ paramsType params (_ : rest) =
     match (UrlListProxy :: _ rest) paramsType params rest

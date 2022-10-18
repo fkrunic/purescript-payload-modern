@@ -31,8 +31,8 @@ instance functorTrie :: Functor Trie where
 
 insert :: forall a. a -> List Segment -> Trie a -> Either String (Trie a)
 insert newVal Nil (Trie { value: Nothing, children }) = Right (Trie { value: Just newVal, children })
-insert newVal Nil (Trie { value: Just _ }) = Left $ "Failed to insert: duplicate key"
-insert newVal (seg : rest) trie@(Trie { value, children }) =
+insert _ Nil (Trie { value: Just _ }) = Left $ "Failed to insert: duplicate key"
+insert newVal (seg : rest) (Trie { value, children }) =
   case List.findIndex (segmentMatches seg) children of
     Just matchIndex -> do
       matchingChild <- note "No index of match index??" $ List.index children matchIndex
@@ -68,7 +68,7 @@ newLeaf value = Trie { value: Just value, children: Nil }
 lookup :: forall a. List String -> Trie a -> List a
 lookup Nil (Trie { value: Nothing }) = Nil
 lookup Nil (Trie { value: Just value }) = value : Nil
-lookup (key : rest) (Trie { value, children }) =
+lookup (key : rest) (Trie { children }) =
   List.concatMap (matchingChildren key) children
   # List.sortBy (\(Tuple s1 _) (Tuple s2 _) -> s1 `compare` s2)
   # map Tuple.snd
@@ -78,9 +78,9 @@ lookup (key : rest) (Trie { value, children }) =
       if match == lit
         then (Tuple seg) <$> lookup rest child
         else Nil
-    matchingChildren match (Tuple seg@(Key _) child) = Tuple seg <$> lookup rest child
-    matchingChildren match (Tuple seg@(Multi _) (Trie { value: Just val })) = (Tuple seg val) : Nil
-    matchingChildren match (Tuple seg@(Multi _) (Trie { value: Nothing })) = Nil
+    matchingChildren _ (Tuple seg@(Key _) child) = Tuple seg <$> lookup rest child
+    matchingChildren _ (Tuple seg@(Multi _) (Trie { value: Just val })) = (Tuple seg val) : Nil
+    matchingChildren _ (Tuple (Multi _) (Trie { value: Nothing })) = Nil
 
 
 lookup_ :: forall f a. Foldable f => f String -> Trie a -> List a

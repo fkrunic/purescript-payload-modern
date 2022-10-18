@@ -43,7 +43,7 @@ instance clientApiRecord ::
       rootParams -- child base params
       (Record client) -- child client
   ) => ClientApi (Record rootSpec) (Record client) where
-  mkClientApi opts routesSpec = mkClientApiList
+  mkClientApi opts _ = mkClientApiList
                         opts
                         (Proxy :: _ childRoutesList)
                         (Proxy :: _ "")

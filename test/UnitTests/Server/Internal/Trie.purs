@@ -192,7 +192,7 @@ testLookup :: forall urlStr urlParts
   => ToSegments urlParts
   => IsSymbol urlStr
   => Proxy urlStr -> String -> List String
-testLookup route reqPath = Trie.lookup (pathToSegments reqPath) routingTrie
+testLookup _ reqPath = Trie.lookup (pathToSegments reqPath) routingTrie
   where
     routeSegments = asSegments (Proxy :: Proxy urlStr)
     routingTrie = Trie.fromFoldable_ [ Tuple routeSegments "handler" ]

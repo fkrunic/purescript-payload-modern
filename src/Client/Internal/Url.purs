@@ -30,7 +30,7 @@ class WriteUrl
   writeUrl :: UrlListProxy urlParts -> Record params -> String
 
 instance writeUrlUrlNil :: WriteUrl UrlNil params where
-  writeUrl _ params = ""
+  writeUrl _ _ = ""
 
 instance writeUrlConsKey ::
   ( IsSymbol key

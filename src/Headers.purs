@@ -40,7 +40,7 @@ set name value (Headers headers) =
   Headers (Map.insert (Utils.toLowerCase name) value headers)
 
 setIfNotDefined :: String -> String -> Headers -> Headers
-setIfNotDefined name value headers | member name headers = headers
+setIfNotDefined name _ headers | member name headers = headers
 setIfNotDefined name value headers = set name value headers
 
 fromFoldable :: forall f. Foldable f => f (Tuple String String) -> Headers

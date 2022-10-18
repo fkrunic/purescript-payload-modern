@@ -6,7 +6,7 @@ module Payload.Internal.Route
        ) where
 
 import Payload.ResponseTypes (Empty)
-import Payload.Spec (GNil, Guards(..))
+import Payload.Spec (GNil, Guards)
 
 type DefaultServerRouteSpec =
   ( params :: {}
@@ -25,6 +25,3 @@ type DefaultRouteSpec =
 data Undefined = Undefined
 
 type DefaultParentRoute = ( params :: {}, guards :: Guards GNil )
-defaultParent :: Record DefaultParentRoute
-defaultParent =
-  { params: {}, guards: Guards :: _ GNil }
