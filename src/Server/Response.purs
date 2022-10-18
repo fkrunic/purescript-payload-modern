@@ -76,6 +76,8 @@ module Payload.Server.Response
 
 import Prelude
 import Control.Monad.Except.Trans (except, throwError)
+import Data.Argonaut.Core (stringify)
+import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Newtype (over)
@@ -87,7 +89,6 @@ import Payload.ContentType as ContentType
 import Payload.Server.Status as Status
 import Payload.TypeErrors (type (<>), type (|>))
 import Prim.TypeError (class Fail, Quote, Text)
-import Simple.JSON as SimpleJson
 import Type.Equality (class TypeEquals)
 import Type.Proxy (Proxy)
 import Unsafe.Coerce (unsafeCoerce)
@@ -212,19 +213,19 @@ class EncodeResponse r where
 instance encodeResponseResponseBody :: EncodeResponse ResponseBody where
   encodeResponse = Right
 
-instance encodeResponseRecord :: SimpleJson.WriteForeign (Record r) => EncodeResponse (Record r) where
+instance encodeResponseRecord :: EncodeJson (Record r) => EncodeResponse (Record r) where
   encodeResponse (Response r) = encodeResponse $ Response $ r { body = Json r.body }
 
-instance encodeResponseArray :: SimpleJson.WriteForeign (Array r) => EncodeResponse (Array r) where
+instance encodeResponseArray :: EncodeJson (Array r) => EncodeResponse (Array r) where
   encodeResponse (Response r) = encodeResponse $ Response $ r { body = Json r.body }
 
-instance encodeResponseJson :: SimpleJson.WriteForeign r => EncodeResponse (Json r) where
+instance encodeResponseJson :: EncodeJson r => EncodeResponse (Json r) where
   encodeResponse (Response { body: Json json, status, headers }) =
     Right
       $ Response
         { status
         , headers: Headers.setIfNotDefined "content-type" ContentType.json headers
-        , body: StringBody (SimpleJson.writeJSON json)
+        , body: StringBody (stringify $ encodeJson json)
         }
 
 instance encodeResponseString :: EncodeResponse String where
