@@ -210,26 +210,26 @@ class EncodeResponse r where
   encodeResponse :: Response r -> Either Failure RawResponse
 
 instance encodeResponseResponseBody :: EncodeResponse ResponseBody where
-  encodeResponse = pure
+  encodeResponse = Right
 
 instance encodeResponseRecord :: SimpleJson.WriteForeign (Record r) => EncodeResponse (Record r) where
-  encodeResponse (Response r) = encodeResponse (Response $ r { body = Json r.body })
+  encodeResponse (Response r) = encodeResponse $ Response $ r { body = Json r.body }
 
 instance encodeResponseArray :: SimpleJson.WriteForeign (Array r) => EncodeResponse (Array r) where
-  encodeResponse (Response r) = encodeResponse (Response $ r { body = Json r.body })
+  encodeResponse (Response r) = encodeResponse $ Response $ r { body = Json r.body }
 
 instance encodeResponseJson :: SimpleJson.WriteForeign r => EncodeResponse (Json r) where
-  encodeResponse (Response r@{ body: Json json }) =
-    pure
+  encodeResponse (Response { body: Json json, status, headers }) =
+    Right
       $ Response
-        { status: r.status
-        , headers: Headers.setIfNotDefined "content-type" ContentType.json r.headers
+        { status
+        , headers: Headers.setIfNotDefined "content-type" ContentType.json headers
         , body: StringBody (SimpleJson.writeJSON json)
         }
 
 instance encodeResponseString :: EncodeResponse String where
   encodeResponse (Response r) =
-    pure
+    Right
       $ Response
           { status: r.status
           , headers: Headers.setIfNotDefined "content-type" ContentType.plain r.headers
@@ -240,38 +240,28 @@ instance encodeResponseStream ::
   TypeEquals (Stream.Stream r) (Stream.Stream ( read :: Stream.Read | r' )) => 
   EncodeResponse (Stream.Stream r) where
 
-  encodeResponse (Response r) =
-    pure
+  encodeResponse (Response { status, headers, body }) =
+    Right
       $ Response
-          { status: r.status
-          , headers: Headers.setIfNotDefined "content-type" ContentType.plain r.headers
-          , body: StreamBody (unsafeCoerce r.body)
+          { status
+          , headers: Headers.setIfNotDefined "content-type" ContentType.plain headers
+          , body: StreamBody (unsafeCoerce body)
           }
 
 instance encodeResponseMaybe :: EncodeResponse a => EncodeResponse (Maybe a) where
   encodeResponse (Response { body: Nothing }) =
-    pure
+    Right
       $ Response
           { status: Status.notFound
           , headers: Headers.empty
           , body: EmptyBody
           }
-  encodeResponse (Response r@{ body: Just body }) =
-    encodeResponse
-      $ Response
-          { status: r.status
-          , headers: r.headers
-          , body
-          }
+  encodeResponse (Response { body: Just body, status, headers }) =
+    encodeResponse $ Response { status, headers, body }
 
 instance encodeResponseEmpty :: EncodeResponse Empty where
-  encodeResponse (Response r) =
-    pure
-      $ Response
-          { status: r.status
-          , headers: r.headers
-          , body: EmptyBody
-          }
+  encodeResponse (Response { status, headers }) =
+    Right $ Response { status, headers, body: EmptyBody }
 
 -- | Status code: 100
 continue :: forall a. a -> Response a
