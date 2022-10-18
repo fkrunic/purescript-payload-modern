@@ -3,3 +3,4 @@ Modernized version of [Purescript-Payload](https://github.com/hoodunit/purescrip
 - JS files use modern ECMA script instead of CommonJS
 - Standard naming convention for test modules
 - Removed examples folder
+- Uses Argonaut instead of SimpleJson for serialization
