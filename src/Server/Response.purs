@@ -216,31 +216,26 @@ else instance toSpecResponseFail ::
 -- | a good place to add a Content-Type header for the encoded response.
 class EncodeResponse r where
   encodeResponse :: Response r -> Result RawResponse
+
 instance encodeResponseResponseBody :: EncodeResponse ResponseBody where
   encodeResponse = pure
-else instance encodeResponseRecord ::
-  ( SimpleJson.WriteForeign (Record r)
-  ) =>
-  EncodeResponse (Record r) where
+
+instance encodeResponseRecord :: SimpleJson.WriteForeign (Record r) => EncodeResponse (Record r) where
   encodeResponse (Response r) = encodeResponse (Response $ r { body = Json r.body })
-else instance encodeResponseArray ::
-  ( SimpleJson.WriteForeign (Array r)
-  ) =>
-  EncodeResponse (Array r) where
+
+instance encodeResponseArray :: SimpleJson.WriteForeign (Array r) => EncodeResponse (Array r) where
   encodeResponse (Response r) = encodeResponse (Response $ r { body = Json r.body })
-else instance encodeResponseJson ::
-  ( SimpleJson.WriteForeign r
-  ) =>
-  EncodeResponse (Json r) where
+
+instance encodeResponseJson :: SimpleJson.WriteForeign r => EncodeResponse (Json r) where
   encodeResponse (Response r@{ body: Json json }) =
     pure
       $ Response
-      $
         { status: r.status
         , headers: Headers.setIfNotDefined "content-type" ContentType.json r.headers
         , body: StringBody (SimpleJson.writeJSON json)
         }
-else instance encodeResponseString :: EncodeResponse String where
+
+instance encodeResponseString :: EncodeResponse String where
   encodeResponse (Response r) =
     pure
       $ Response
@@ -248,9 +243,11 @@ else instance encodeResponseString :: EncodeResponse String where
           , headers: Headers.setIfNotDefined "content-type" ContentType.plain r.headers
           , body: StringBody r.body
           }
-else instance encodeResponseStream ::
-  (TypeEquals (Stream.Stream r) (Stream.Stream ( read :: Stream.Read | r' ))) =>
+
+instance encodeResponseStream :: 
+  TypeEquals (Stream.Stream r) (Stream.Stream ( read :: Stream.Read | r' )) => 
   EncodeResponse (Stream.Stream r) where
+
   encodeResponse (Response r) =
     pure
       $ Response
@@ -258,7 +255,8 @@ else instance encodeResponseStream ::
           , headers: Headers.setIfNotDefined "content-type" ContentType.plain r.headers
           , body: StreamBody (unsafeCoerce r.body)
           }
-else instance encodeResponseMaybe :: EncodeResponse a => EncodeResponse (Maybe a) where
+
+instance encodeResponseMaybe :: EncodeResponse a => EncodeResponse (Maybe a) where
   encodeResponse (Response { body: Nothing }) =
     pure
       $ Response
@@ -273,7 +271,8 @@ else instance encodeResponseMaybe :: EncodeResponse a => EncodeResponse (Maybe a
           , headers: r.headers
           , body
           }
-else instance encodeResponseEmpty :: EncodeResponse Empty where
+
+instance encodeResponseEmpty :: EncodeResponse Empty where
   encodeResponse (Response r) =
     pure
       $ Response
