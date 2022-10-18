@@ -1,7 +1,6 @@
 module Payload.Server.Internal.ServerResponse where
 
 import Prelude
-
 import Data.Either (Either(..))
 import Data.Traversable (sequence_)
 import Data.Tuple (Tuple(..))
@@ -22,14 +21,18 @@ import Type.Equality (to)
 import Unsafe.Coerce (unsafeCoerce)
 
 sendResponse :: HTTP.Response -> RawResponse -> Effect Unit
-sendResponse res rawResp = Aff.runAff_ onComplete do
-  liftEffect (writeResponse res rawResp)
+sendResponse res rawResp =
+  Aff.runAff_ onComplete do
+    liftEffect (writeResponse res rawResp)
   where
-    onComplete (Left errors) = do
-      log $ "Error sending response:\n  Server response:\n" <> show rawResp <>
-        "\n\n  Error(s): " <> show errors
-      writeResponse res (internalError (StringBody "Error sending server response"))
-    onComplete (Right _) = pure unit
+  onComplete (Left errors) = do
+    log
+      $ "Error sending response:\n  Server response:\n"
+      <> show rawResp
+      <> "\n\n  Error(s): "
+      <> show errors
+    writeResponse res (internalError (StringBody "Error sending server response"))
+  onComplete (Right _) = pure unit
 
 writeResponse :: HTTP.Response -> RawResponse -> Effect Unit
 writeResponse res (Response serverRes) = do
@@ -53,9 +56,10 @@ writeBodyAndHeaders res headers EmptyBody = do
 foreign import endResponse_ :: HTTP.Response -> Unit -> (Unit -> Effect Unit) -> Effect Unit
 
 endResponse :: HTTP.Response -> Aff Unit
-endResponse res = Aff.makeAff \cb -> do
-  endResponse_ res unit (\_ -> cb (Right unit))
-  pure Aff.nonCanceler
+endResponse res =
+  Aff.makeAff \cb -> do
+    endResponse_ res unit (\_ -> cb (Right unit))
+    pure Aff.nonCanceler
 
 writeHeaders :: HTTP.Response -> Headers -> Effect Unit
 writeHeaders res headers = do

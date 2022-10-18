@@ -1,13 +1,12 @@
 module Payload.Server.Handleable
-       ( class Handleable
-       , MethodHandler
-       , handle
-       , class DecodeOptionalBody
-       , decodeOptionalBody
-       ) where
+  ( class Handleable
+  , MethodHandler
+  , handle
+  , class DecodeOptionalBody
+  , decodeOptionalBody
+  ) where
 
 import Prelude
-
 import Control.Monad.Except (except, lift, withExceptT)
 import Data.Either (Either(..))
 import Data.List (List)
@@ -38,67 +37,62 @@ import Prim.Symbol as Symbol
 import Type.Equality (class TypeEquals, to)
 import Type.Proxy (Proxy(..))
 
-type MethodHandler = RequestUrl -> HTTP.Request -> HTTP.Response -> Result RawResponse
+type MethodHandler
+  = RequestUrl -> HTTP.Request -> HTTP.Response -> Result RawResponse
 
-class Handleable
-  route
-  handler
-  (basePath :: Symbol)
-  (baseParams :: Row Type)
-  (baseGuards :: GuardList)
-  (guardsSpec :: Row Type)
-  guards | route -> handler where
-  handle :: Proxy basePath
-            -> Proxy (Record baseParams)
-            -> Guards baseGuards
-            -> GuardTypes (Record guardsSpec)
-            -> route
-            -> handler
-            -> guards
-            -> RequestUrl
-            -> HTTP.Request
-            -> HTTP.Response
-            -> Result RawResponse
+class Handleable route handler (basePath :: Symbol) (baseParams :: Row Type) (baseGuards :: GuardList) (guardsSpec :: Row Type) guards | route -> handler where
+  handle ::
+    Proxy basePath ->
+    Proxy (Record baseParams) ->
+    Guards baseGuards ->
+    GuardTypes (Record guardsSpec) ->
+    route ->
+    handler ->
+    guards ->
+    RequestUrl ->
+    HTTP.Request ->
+    HTTP.Response ->
+    Result RawResponse
 
 instance handleablePostRoute ::
-       ( TypeEquals (Record route)
-           { response :: res
-           , params :: Record params
-           , query :: Record query
-           , body :: body
-           , guards :: Guards guardNames
-           | r }
-       , IsSymbol path
-       , Symbol.Append "POST " fullPath docRoute
-       , Resp.ToSpecResponse docRoute handlerRes res
-       , Resp.EncodeResponse res
-       , Symbol.Append basePath path fullPath
-       , DecodeOptionalBody body
-
-       , Row.Union baseParams params fullUrlParams
-       , PayloadUrl.DecodeUrl fullPath fullUrlParams
-       , PayloadQuery.DecodeQuery fullPath query
-       , ParseUrl fullPath urlParts
-       , ToSegments urlParts
-
-       , TypeEquals
-           { query :: Record query
-           , params :: Record fullUrlParams
-           , body :: body
-           , guards :: Record routeGuardSpec }
-           (Record payloadWithEmpty)
-       , OmitEmpty payloadWithEmpty payload
-
-       , GuardParsing.Append baseGuards guardNames fullGuards
-       , RunGuards fullGuards guardsSpec allGuards () routeGuardSpec
-       )
-    => Handleable (Route "POST" path (Record route))
-                  (Record payload -> Aff handlerRes)
-                  basePath
-                  baseParams
-                  baseGuards
-                  guardsSpec
-                  (Record allGuards) where
+  ( TypeEquals (Record route)
+      { response :: res
+      , params :: Record params
+      , query :: Record query
+      , body :: body
+      , guards :: Guards guardNames
+      | r
+      }
+  , IsSymbol path
+  , Symbol.Append "POST " fullPath docRoute
+  , Resp.ToSpecResponse docRoute handlerRes res
+  , Resp.EncodeResponse res
+  , Symbol.Append basePath path fullPath
+  , DecodeOptionalBody body
+  , Row.Union baseParams params fullUrlParams
+  , PayloadUrl.DecodeUrl fullPath fullUrlParams
+  , PayloadQuery.DecodeQuery fullPath query
+  , ParseUrl fullPath urlParts
+  , ToSegments urlParts
+  , TypeEquals
+      { query :: Record query
+      , params :: Record fullUrlParams
+      , body :: body
+      , guards :: Record routeGuardSpec
+      }
+      (Record payloadWithEmpty)
+  , OmitEmpty payloadWithEmpty payload
+  , GuardParsing.Append baseGuards guardNames fullGuards
+  , RunGuards fullGuards guardsSpec allGuards () routeGuardSpec
+  ) =>
+  Handleable
+    (Route "POST" path (Record route))
+    (Record payload -> Aff handlerRes)
+    basePath
+    baseParams
+    baseGuards
+    guardsSpec
+    (Record allGuards) where
   handle _ _ _ _ _ handler allGuards { path, query } req _ = do
     guards <- runGuards (Guards :: _ fullGuards) (GuardTypes :: _ (Record guardsSpec)) allGuards {} req
     params <- withExceptT Forward $ except $ decodePath path
@@ -109,51 +103,51 @@ instance handleablePostRoute ::
     mkResponse (Proxy :: _ docRoute) (Proxy :: _ res) (handler (omitEmpty payload))
 
     where
-      badRequest :: String -> Failure
-      badRequest _ = Error $ Resp.badRequest EmptyBody
+    badRequest :: String -> Failure
+    badRequest _ = Error $ Resp.badRequest EmptyBody
 
-      decodePath :: List String -> Either String (Record fullUrlParams)
-      decodePath = PayloadUrl.decodeUrl (Proxy :: _ fullPath) (Proxy :: _ (Record fullUrlParams))
+    decodePath :: List String -> Either String (Record fullUrlParams)
+    decodePath = PayloadUrl.decodeUrl (Proxy :: _ fullPath) (Proxy :: _ (Record fullUrlParams))
 
-      decodeQuery :: String -> Either String (Record query)
-      decodeQuery = PayloadQuery.decodeQuery (Proxy :: _ fullPath) (Proxy :: _ (Record query))
+    decodeQuery :: String -> Either String (Record query)
+    decodeQuery = PayloadQuery.decodeQuery (Proxy :: _ fullPath) (Proxy :: _ (Record query))
 
 instance handleableGetRoute ::
-       ( TypeEquals (Record route)
-           { response :: res
-           , params :: Record params
-           , query :: Record query
-           , guards :: Guards guardNames
-           | r }
-       , IsSymbol path
-       , Symbol.Append "GET " fullPath docRoute
-       , Resp.ToSpecResponse docRoute handlerRes res
-       , Resp.EncodeResponse res
-       , Symbol.Append basePath path fullPath
-
-       , Row.Union baseParams params fullUrlParams
-       , PayloadUrl.DecodeUrl fullPath fullUrlParams
-       , PayloadQuery.DecodeQuery fullPath query
-       , ParseUrl fullPath urlParts
-       , ToSegments urlParts
-
-       , TypeEquals
-           { query :: Record query
-           , params :: Record fullUrlParams
-           , guards :: Record routeGuardSpec }
-           (Record payloadWithEmpty)
-       , OmitEmpty payloadWithEmpty payload
-
-       , GuardParsing.Append baseGuards guardNames fullGuards
-       , RunGuards fullGuards guardsSpec allGuards () routeGuardSpec
-       )
-    => Handleable (Route "GET" path (Record route))
-                  (Record payload -> Aff handlerRes)
-                  basePath
-                  baseParams
-                  baseGuards
-                  guardsSpec
-                  (Record allGuards) where
+  ( TypeEquals (Record route)
+      { response :: res
+      , params :: Record params
+      , query :: Record query
+      , guards :: Guards guardNames
+      | r
+      }
+  , IsSymbol path
+  , Symbol.Append "GET " fullPath docRoute
+  , Resp.ToSpecResponse docRoute handlerRes res
+  , Resp.EncodeResponse res
+  , Symbol.Append basePath path fullPath
+  , Row.Union baseParams params fullUrlParams
+  , PayloadUrl.DecodeUrl fullPath fullUrlParams
+  , PayloadQuery.DecodeQuery fullPath query
+  , ParseUrl fullPath urlParts
+  , ToSegments urlParts
+  , TypeEquals
+      { query :: Record query
+      , params :: Record fullUrlParams
+      , guards :: Record routeGuardSpec
+      }
+      (Record payloadWithEmpty)
+  , OmitEmpty payloadWithEmpty payload
+  , GuardParsing.Append baseGuards guardNames fullGuards
+  , RunGuards fullGuards guardsSpec allGuards () routeGuardSpec
+  ) =>
+  Handleable
+    (Route "GET" path (Record route))
+    (Record payload -> Aff handlerRes)
+    basePath
+    baseParams
+    baseGuards
+    guardsSpec
+    (Record allGuards) where
   handle _ _ _ _ _ handler allGuards { path, query } req _ = do
     guards <- runGuards (Guards :: _ fullGuards) (GuardTypes :: _ (Record guardsSpec)) allGuards {} req
     params <- withExceptT Forward $ except $ decodePath path
@@ -162,51 +156,51 @@ instance handleableGetRoute ::
     mkResponse (Proxy :: _ docRoute) (Proxy :: _ res) (handler (omitEmpty payload))
 
     where
-      badRequest :: String -> Failure
-      badRequest _ = Error $ Resp.badRequest EmptyBody
+    badRequest :: String -> Failure
+    badRequest _ = Error $ Resp.badRequest EmptyBody
 
-      decodePath :: List String -> Either String (Record fullUrlParams)
-      decodePath = PayloadUrl.decodeUrl (Proxy :: _ fullPath) (Proxy :: _ (Record fullUrlParams))
+    decodePath :: List String -> Either String (Record fullUrlParams)
+    decodePath = PayloadUrl.decodeUrl (Proxy :: _ fullPath) (Proxy :: _ (Record fullUrlParams))
 
-      decodeQuery :: String -> Either String (Record query)
-      decodeQuery = PayloadQuery.decodeQuery (Proxy :: _ fullPath) (Proxy :: _ (Record query))
+    decodeQuery :: String -> Either String (Record query)
+    decodeQuery = PayloadQuery.decodeQuery (Proxy :: _ fullPath) (Proxy :: _ (Record query))
 
 instance handleableHeadRoute ::
-       ( TypeEquals (Record route)
-           { response :: res
-           , params :: Record params
-           , query :: Record query
-           , guards :: Guards guardNames
-           | r }
-       , IsSymbol path
-       , Symbol.Append basePath path fullPath
-       , Symbol.Append "HEAD " fullPath docRoute
-       , Resp.ToSpecResponse docRoute handlerRes res
-       , Resp.EncodeResponse res
-
-       , Row.Union baseParams params fullUrlParams
-       , PayloadUrl.DecodeUrl fullPath fullUrlParams
-       , PayloadQuery.DecodeQuery fullPath query
-       , ParseUrl fullPath urlParts
-       , ToSegments urlParts
-
-       , TypeEquals
-           { query :: Record query
-           , params :: Record fullUrlParams
-           , guards :: Record routeGuardSpec }
-           (Record payloadWithEmpty)
-       , OmitEmpty payloadWithEmpty payload
-
-       , GuardParsing.Append baseGuards guardNames fullGuards
-       , RunGuards fullGuards guardsSpec allGuards () routeGuardSpec
-       )
-    => Handleable (Route "HEAD" path (Record route))
-                  (Record payload -> Aff handlerRes)
-                  basePath
-                  baseParams
-                  baseGuards
-                  guardsSpec
-                  (Record allGuards) where
+  ( TypeEquals (Record route)
+      { response :: res
+      , params :: Record params
+      , query :: Record query
+      , guards :: Guards guardNames
+      | r
+      }
+  , IsSymbol path
+  , Symbol.Append basePath path fullPath
+  , Symbol.Append "HEAD " fullPath docRoute
+  , Resp.ToSpecResponse docRoute handlerRes res
+  , Resp.EncodeResponse res
+  , Row.Union baseParams params fullUrlParams
+  , PayloadUrl.DecodeUrl fullPath fullUrlParams
+  , PayloadQuery.DecodeQuery fullPath query
+  , ParseUrl fullPath urlParts
+  , ToSegments urlParts
+  , TypeEquals
+      { query :: Record query
+      , params :: Record fullUrlParams
+      , guards :: Record routeGuardSpec
+      }
+      (Record payloadWithEmpty)
+  , OmitEmpty payloadWithEmpty payload
+  , GuardParsing.Append baseGuards guardNames fullGuards
+  , RunGuards fullGuards guardsSpec allGuards () routeGuardSpec
+  ) =>
+  Handleable
+    (Route "HEAD" path (Record route))
+    (Record payload -> Aff handlerRes)
+    basePath
+    baseParams
+    baseGuards
+    guardsSpec
+    (Record allGuards) where
   handle _ _ _ _ _ handler allGuards { path, query } req _ = do
     guards <- runGuards (Guards :: _ fullGuards) (GuardTypes :: _ (Record guardsSpec)) allGuards {} req
     params <- withExceptT Forward $ except $ decodePath path
@@ -215,54 +209,54 @@ instance handleableHeadRoute ::
     Resp.setBody EmptyBody <$> mkResponse (Proxy :: _ docRoute) (Proxy :: _ res) (handler (omitEmpty payload))
 
     where
-      badRequest :: String -> Failure
-      badRequest _ = Error $ Resp.badRequest EmptyBody
+    badRequest :: String -> Failure
+    badRequest _ = Error $ Resp.badRequest EmptyBody
 
-      decodePath :: List String -> Either String (Record fullUrlParams)
-      decodePath = PayloadUrl.decodeUrl (Proxy :: _ fullPath) (Proxy :: _ (Record fullUrlParams))
+    decodePath :: List String -> Either String (Record fullUrlParams)
+    decodePath = PayloadUrl.decodeUrl (Proxy :: _ fullPath) (Proxy :: _ (Record fullUrlParams))
 
-      decodeQuery :: String -> Either String (Record query)
-      decodeQuery = PayloadQuery.decodeQuery (Proxy :: _ fullPath) (Proxy :: _ (Record query))
+    decodeQuery :: String -> Either String (Record query)
+    decodeQuery = PayloadQuery.decodeQuery (Proxy :: _ fullPath) (Proxy :: _ (Record query))
 
 instance handleablePutRoute ::
-       ( TypeEquals (Record route)
-           { response :: res
-           , params :: Record params
-           , query :: Record query
-           , body :: body
-           , guards :: Guards guardNames
-           | r }
-       , IsSymbol path
-       , Symbol.Append "PUT " fullPath docRoute
-       , Resp.ToSpecResponse docRoute handlerRes res
-       , Resp.EncodeResponse res
-       , Symbol.Append basePath path fullPath
-       , DecodeOptionalBody body
-
-       , Row.Union baseParams params fullUrlParams
-       , PayloadUrl.DecodeUrl fullPath fullUrlParams
-       , PayloadQuery.DecodeQuery fullPath query
-       , ParseUrl fullPath urlParts
-       , ToSegments urlParts
-
-       , TypeEquals
-           { query :: Record query
-           , params :: Record fullUrlParams
-           , body :: body
-           , guards :: Record routeGuardSpec }
-           (Record payloadWithEmpty)
-       , OmitEmpty payloadWithEmpty payload
-
-       , GuardParsing.Append baseGuards guardNames fullGuards
-       , RunGuards fullGuards guardsSpec allGuards () routeGuardSpec
-       )
-    => Handleable (Route "PUT" path (Record route))
-                  (Record payload -> Aff handlerRes)
-                  basePath
-                  baseParams
-                  baseGuards
-                  guardsSpec
-                  (Record allGuards) where
+  ( TypeEquals (Record route)
+      { response :: res
+      , params :: Record params
+      , query :: Record query
+      , body :: body
+      , guards :: Guards guardNames
+      | r
+      }
+  , IsSymbol path
+  , Symbol.Append "PUT " fullPath docRoute
+  , Resp.ToSpecResponse docRoute handlerRes res
+  , Resp.EncodeResponse res
+  , Symbol.Append basePath path fullPath
+  , DecodeOptionalBody body
+  , Row.Union baseParams params fullUrlParams
+  , PayloadUrl.DecodeUrl fullPath fullUrlParams
+  , PayloadQuery.DecodeQuery fullPath query
+  , ParseUrl fullPath urlParts
+  , ToSegments urlParts
+  , TypeEquals
+      { query :: Record query
+      , params :: Record fullUrlParams
+      , body :: body
+      , guards :: Record routeGuardSpec
+      }
+      (Record payloadWithEmpty)
+  , OmitEmpty payloadWithEmpty payload
+  , GuardParsing.Append baseGuards guardNames fullGuards
+  , RunGuards fullGuards guardsSpec allGuards () routeGuardSpec
+  ) =>
+  Handleable
+    (Route "PUT" path (Record route))
+    (Record payload -> Aff handlerRes)
+    basePath
+    baseParams
+    baseGuards
+    guardsSpec
+    (Record allGuards) where
   handle _ _ _ _ _ handler allGuards { path, query } req _ = do
     guards <- runGuards (Guards :: _ fullGuards) (GuardTypes :: _ (Record guardsSpec)) allGuards {} req
     params <- withExceptT Forward $ except $ decodePath path
@@ -273,54 +267,54 @@ instance handleablePutRoute ::
     mkResponse (Proxy :: _ docRoute) (Proxy :: _ res) (handler (omitEmpty payload))
 
     where
-      badRequest :: String -> Failure
-      badRequest _ = Error $ Resp.badRequest EmptyBody
+    badRequest :: String -> Failure
+    badRequest _ = Error $ Resp.badRequest EmptyBody
 
-      decodePath :: List String -> Either String (Record fullUrlParams)
-      decodePath = PayloadUrl.decodeUrl (Proxy :: _ fullPath) (Proxy :: _ (Record fullUrlParams))
+    decodePath :: List String -> Either String (Record fullUrlParams)
+    decodePath = PayloadUrl.decodeUrl (Proxy :: _ fullPath) (Proxy :: _ (Record fullUrlParams))
 
-      decodeQuery :: String -> Either String (Record query)
-      decodeQuery = PayloadQuery.decodeQuery (Proxy :: _ fullPath) (Proxy :: _ (Record query))
+    decodeQuery :: String -> Either String (Record query)
+    decodeQuery = PayloadQuery.decodeQuery (Proxy :: _ fullPath) (Proxy :: _ (Record query))
 
 instance handleableDeleteRoute ::
-       ( TypeEquals (Record route)
-           { response :: res
-           , params :: Record params
-           , query :: Record query
-           , body :: body
-           , guards :: Guards guardNames
-           | r }
-       , IsSymbol path
-       , Symbol.Append "DELETE " fullPath docRoute
-       , Resp.ToSpecResponse docRoute handlerRes res
-       , Resp.EncodeResponse res
-       , Symbol.Append basePath path fullPath
-       , DecodeOptionalBody body
-
-       , Row.Union baseParams params fullUrlParams
-       , PayloadUrl.DecodeUrl fullPath fullUrlParams
-       , PayloadQuery.DecodeQuery fullPath query
-       , ParseUrl fullPath urlParts
-       , ToSegments urlParts
-
-       , TypeEquals
-           { query :: Record query
-           , params :: Record fullUrlParams
-           , body :: body
-           , guards :: Record routeGuardSpec }
-           (Record payloadWithEmpty)
-       , OmitEmpty payloadWithEmpty payload
-
-       , GuardParsing.Append baseGuards guardNames fullGuards
-       , RunGuards fullGuards guardsSpec allGuards () routeGuardSpec
-       )
-    => Handleable (Route "DELETE" path (Record route))
-                  (Record payload -> Aff handlerRes)
-                  basePath
-                  baseParams
-                  baseGuards
-                  guardsSpec
-                  (Record allGuards) where
+  ( TypeEquals (Record route)
+      { response :: res
+      , params :: Record params
+      , query :: Record query
+      , body :: body
+      , guards :: Guards guardNames
+      | r
+      }
+  , IsSymbol path
+  , Symbol.Append "DELETE " fullPath docRoute
+  , Resp.ToSpecResponse docRoute handlerRes res
+  , Resp.EncodeResponse res
+  , Symbol.Append basePath path fullPath
+  , DecodeOptionalBody body
+  , Row.Union baseParams params fullUrlParams
+  , PayloadUrl.DecodeUrl fullPath fullUrlParams
+  , PayloadQuery.DecodeQuery fullPath query
+  , ParseUrl fullPath urlParts
+  , ToSegments urlParts
+  , TypeEquals
+      { query :: Record query
+      , params :: Record fullUrlParams
+      , body :: body
+      , guards :: Record routeGuardSpec
+      }
+      (Record payloadWithEmpty)
+  , OmitEmpty payloadWithEmpty payload
+  , GuardParsing.Append baseGuards guardNames fullGuards
+  , RunGuards fullGuards guardsSpec allGuards () routeGuardSpec
+  ) =>
+  Handleable
+    (Route "DELETE" path (Record route))
+    (Record payload -> Aff handlerRes)
+    basePath
+    baseParams
+    baseGuards
+    guardsSpec
+    (Record allGuards) where
   handle _ _ _ _ _ handler allGuards { path, query } req _ = do
     guards <- runGuards (Guards :: _ fullGuards) (GuardTypes :: _ (Record guardsSpec)) allGuards {} req
     params <- withExceptT Forward $ except $ decodePath path
@@ -331,51 +325,51 @@ instance handleableDeleteRoute ::
     mkResponse (Proxy :: _ docRoute) (Proxy :: _ res) (handler (omitEmpty payload))
 
     where
-      badRequest :: String -> Failure
-      badRequest _ = Error $ Resp.badRequest EmptyBody
+    badRequest :: String -> Failure
+    badRequest _ = Error $ Resp.badRequest EmptyBody
 
-      decodePath :: List String -> Either String (Record fullUrlParams)
-      decodePath = PayloadUrl.decodeUrl (Proxy :: _ fullPath) (Proxy :: _ (Record fullUrlParams))
+    decodePath :: List String -> Either String (Record fullUrlParams)
+    decodePath = PayloadUrl.decodeUrl (Proxy :: _ fullPath) (Proxy :: _ (Record fullUrlParams))
 
-      decodeQuery :: String -> Either String (Record query)
-      decodeQuery = PayloadQuery.decodeQuery (Proxy :: _ fullPath) (Proxy :: _ (Record query))
+    decodeQuery :: String -> Either String (Record query)
+    decodeQuery = PayloadQuery.decodeQuery (Proxy :: _ fullPath) (Proxy :: _ (Record query))
 
 instance handleableOptionsRoute ::
-       ( TypeEquals (Record route)
-           { response :: res
-           , params :: Record params
-           , query :: Record query
-           , guards :: Guards guardNames
-           | r }
-       , IsSymbol path
-       , Symbol.Append "OPTIONS " fullPath docRoute
-       , Resp.ToSpecResponse docRoute handlerRes res
-       , Resp.EncodeResponse res
-       , Symbol.Append basePath path fullPath
-
-       , Row.Union baseParams params fullUrlParams
-       , PayloadUrl.DecodeUrl fullPath fullUrlParams
-       , PayloadQuery.DecodeQuery fullPath query
-       , ParseUrl fullPath urlParts
-       , ToSegments urlParts
-
-       , TypeEquals
-           { query :: Record query
-           , params :: Record fullUrlParams
-           , guards :: Record routeGuardSpec }
-           (Record payloadWithEmpty)
-       , OmitEmpty payloadWithEmpty payload
-
-       , GuardParsing.Append baseGuards guardNames fullGuards
-       , RunGuards fullGuards guardsSpec allGuards () routeGuardSpec
-       )
-    => Handleable (Route "OPTIONS" path (Record route))
-                  (Record payload -> Aff handlerRes)
-                  basePath
-                  baseParams
-                  baseGuards
-                  guardsSpec
-                  (Record allGuards) where
+  ( TypeEquals (Record route)
+      { response :: res
+      , params :: Record params
+      , query :: Record query
+      , guards :: Guards guardNames
+      | r
+      }
+  , IsSymbol path
+  , Symbol.Append "OPTIONS " fullPath docRoute
+  , Resp.ToSpecResponse docRoute handlerRes res
+  , Resp.EncodeResponse res
+  , Symbol.Append basePath path fullPath
+  , Row.Union baseParams params fullUrlParams
+  , PayloadUrl.DecodeUrl fullPath fullUrlParams
+  , PayloadQuery.DecodeQuery fullPath query
+  , ParseUrl fullPath urlParts
+  , ToSegments urlParts
+  , TypeEquals
+      { query :: Record query
+      , params :: Record fullUrlParams
+      , guards :: Record routeGuardSpec
+      }
+      (Record payloadWithEmpty)
+  , OmitEmpty payloadWithEmpty payload
+  , GuardParsing.Append baseGuards guardNames fullGuards
+  , RunGuards fullGuards guardsSpec allGuards () routeGuardSpec
+  ) =>
+  Handleable
+    (Route "OPTIONS" path (Record route))
+    (Record payload -> Aff handlerRes)
+    basePath
+    baseParams
+    baseGuards
+    guardsSpec
+    (Record allGuards) where
   handle _ _ _ _ _ handler allGuards { path, query } req _ = do
     guards <- runGuards (Guards :: _ fullGuards) (GuardTypes :: _ (Record guardsSpec)) allGuards {} req
     params <- withExceptT Forward $ except $ decodePath path
@@ -384,19 +378,20 @@ instance handleableOptionsRoute ::
     mkResponse (Proxy :: _ docRoute) (Proxy :: _ res) (handler (omitEmpty payload))
 
     where
-      badRequest :: String -> Failure
-      badRequest _ = Error $ Resp.badRequest EmptyBody
+    badRequest :: String -> Failure
+    badRequest _ = Error $ Resp.badRequest EmptyBody
 
-      decodePath :: List String -> Either String (Record fullUrlParams)
-      decodePath = PayloadUrl.decodeUrl (Proxy :: _ fullPath) (Proxy :: _ (Record fullUrlParams))
+    decodePath :: List String -> Either String (Record fullUrlParams)
+    decodePath = PayloadUrl.decodeUrl (Proxy :: _ fullPath) (Proxy :: _ (Record fullUrlParams))
 
-      decodeQuery :: String -> Either String (Record query)
-      decodeQuery = PayloadQuery.decodeQuery (Proxy :: _ fullPath) (Proxy :: _ (Record query))
+    decodeQuery :: String -> Either String (Record query)
+    decodeQuery = PayloadQuery.decodeQuery (Proxy :: _ fullPath) (Proxy :: _ (Record query))
 
-mkResponse :: forall handlerRes res docRoute
-  . Resp.ToSpecResponse docRoute handlerRes res
-  => Resp.EncodeResponse res
-  => Proxy docRoute -> Proxy res -> Aff handlerRes -> Result RawResponse
+mkResponse ::
+  forall handlerRes res docRoute.
+  Resp.ToSpecResponse docRoute handlerRes res =>
+  Resp.EncodeResponse res =>
+  Proxy docRoute -> Proxy res -> Aff handlerRes -> Result RawResponse
 mkResponse _ _ aff = do
   (handlerResp :: handlerRes) <- lift $ aff
   (specResp :: Response res) <- Resp.toSpecResponse (Proxy :: _ docRoute) handlerResp
@@ -418,16 +413,15 @@ readBody_ req cb = do
     onEnd inputStream handleEnd
   pure mempty
   where
-    returnError msg = cb $ Left $ msg
-    returnBody val = cb $ Right $ val
+  returnError msg = cb $ Left $ msg
+  returnBody val = cb $ Right $ val
 
-class DecodeOptionalBody
-  (body :: Type)
-  where
-    decodeOptionalBody :: String -> Either String body
+class DecodeOptionalBody (body :: Type) where
+  decodeOptionalBody :: String -> Either String body
 
 instance decodeOptionalBodyUndefined :: DecodeOptionalBody Undefined where
   decodeOptionalBody _ = Right Undefined
 else instance encodeOptionalBodyDefined ::
-  DecodeBody body => DecodeOptionalBody body where
+  DecodeBody body =>
+  DecodeOptionalBody body where
   decodeOptionalBody body = decodeBody body

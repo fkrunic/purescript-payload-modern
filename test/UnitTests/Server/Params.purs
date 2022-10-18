@@ -1,7 +1,6 @@
 module Test.UnitTests.Server.Params where
 
 import Prelude
-
 import Data.Either (Either(..))
 import Payload.Server.Params (decodeParam)
 import Test.Unit (TestSuite, suite, test)

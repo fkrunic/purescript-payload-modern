@@ -1,7 +1,6 @@
 module Payload.Server.Internal.MimeTypes where
 
 import Prelude
-
 import Data.Maybe (Maybe(..))
 import Data.Nullable (Nullable)
 import Data.Nullable as Nullable

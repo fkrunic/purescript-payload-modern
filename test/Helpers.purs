@@ -1,7 +1,6 @@
 module Test.Helpers where
 
 import Prelude
-
 import Affjax.Node as AX
 import Affjax.RequestBody as RequestBody
 import Affjax.RequestHeader (RequestHeader(..))
@@ -26,52 +25,55 @@ import Payload.Spec (Spec(Spec))
 import Test.Unit (Test, failure, success)
 import Test.Unit.Assert as Assert
 
-withServer
-  :: forall routesSpec guardsSpec handlers guards
-   . Routable routesSpec guardsSpec handlers guards
-  => Spec { routes :: routesSpec, guards :: guardsSpec }
-  -> { handlers :: handlers, guards :: guards }
-  -> Aff Unit
-  -> Aff Unit
+withServer ::
+  forall routesSpec guardsSpec handlers guards.
+  Routable routesSpec guardsSpec handlers guards =>
+  Spec { routes :: routesSpec, guards :: guardsSpec } ->
+  { handlers :: handlers, guards :: guards } ->
+  Aff Unit ->
+  Aff Unit
 withServer apiSpec api_ aff = do
   let opts = Payload.defaultOpts { logLevel = Payload.LogError, port = 3000 }
   whileServerRuns (Payload.startGuarded opts apiSpec api_) aff
 
 whileServerRuns ::
-  Aff (Either String Payload.Server)
-  -> Aff Unit
-  -> Aff Unit
+  Aff (Either String Payload.Server) ->
+  Aff Unit ->
+  Aff Unit
 whileServerRuns runServer doWhileRunning = do
   Aff.bracket runServer completed runAff
   pure unit
   where
-    runAff (Left e) = Aff.throwError (Aff.error e)
-    runAff (Right _) = doWhileRunning
-    completed (Left _) = pure unit
-    completed (Right server) = Payload.close server
+  runAff (Left e) = Aff.throwError (Aff.error e)
+  runAff (Right _) = doWhileRunning
+  completed (Left _) = pure unit
+  completed (Right server) = Payload.close server
 
-withRoutes :: forall routesSpec handlers
-  . Routable routesSpec {} handlers {}
-  => Spec routesSpec
-  -> handlers
-  -> Aff Unit
-  -> Aff Unit
-withRoutes _ handlers = 
+withRoutes ::
+  forall routesSpec handlers.
+  Routable routesSpec {} handlers {} =>
+  Spec routesSpec ->
+  handlers ->
+  Aff Unit ->
+  Aff Unit
+withRoutes _ handlers =
   withServer (Spec :: Spec { guards :: {}, routes :: routesSpec })
-             { guards: {}, handlers }
+    { guards: {}, handlers }
 
-type ApiResponse =
-  { status :: Int
-  , body :: String
-  , headers :: Map String String }
+type ApiResponse
+  = { status :: Int
+    , body :: String
+    , headers :: Map String String
+    }
 
-type RequestClient =
-  { get :: String -> Aff ApiResponse
-  , options :: String -> Aff ApiResponse
-  , post :: String -> String -> Aff ApiResponse
-  , put :: String -> String -> Aff ApiResponse
-  , delete :: String -> Maybe String -> Aff ApiResponse
-  , head :: String -> Aff ApiResponse }
+type RequestClient
+  = { get :: String -> Aff ApiResponse
+    , options :: String -> Aff ApiResponse
+    , post :: String -> String -> Aff ApiResponse
+    , put :: String -> String -> Aff ApiResponse
+    , delete :: String -> Maybe String -> Aff ApiResponse
+    , head :: String -> Aff ApiResponse
+    }
 
 request :: String -> RequestClient
 request host =
@@ -80,7 +82,8 @@ request host =
   , post: post host
   , put: put host
   , delete: delete host
-  , head: head host }
+  , head: head host
+  }
 
 get :: String -> String -> Aff ApiResponse
 get host path = AX.get ResponseFormat.string (host <> "/" <> path) >>= decodeResponse
@@ -88,25 +91,31 @@ get host path = AX.get ResponseFormat.string (host <> "/" <> path) >>= decodeRes
 get_ :: String -> String -> Headers -> Aff ApiResponse
 get_ host path headers = AX.request req >>= decodeResponse
   where
-    req = AX.defaultRequest
-            { method = Left GET
-            , url = host <> "/" <> path
-            , responseFormat = ResponseFormat.string
-            , headers = (\(Tuple name val) -> RequestHeader name val) <$> Headers.toUnfoldable headers }
+  req =
+    AX.defaultRequest
+      { method = Left GET
+      , url = host <> "/" <> path
+      , responseFormat = ResponseFormat.string
+      , headers = (\(Tuple name val) -> RequestHeader name val) <$> Headers.toUnfoldable headers
+      }
 
 options :: String -> String -> Aff ApiResponse
 options host path = do
   let url = host <> "/" <> path
-  let req = AX.defaultRequest
+  let
+    req =
+      AX.defaultRequest
         { method = Left OPTIONS
         , url = url
-        , responseFormat = ResponseFormat.string }
+        , responseFormat = ResponseFormat.string
+        }
   result <- AX.request req
   decodeResponse result
 
 post :: String -> String -> String -> Aff ApiResponse
 post host path reqBody = AX.post ResponseFormat.string (host <> path) (Just body) >>= decodeResponse
-  where body = RequestBody.String reqBody
+  where
+  body = RequestBody.String reqBody
 
 put :: String -> String -> String -> Aff ApiResponse
 put host path reqBody = do
@@ -118,21 +127,26 @@ delete :: String -> String -> Maybe String -> Aff ApiResponse
 delete host path reqBody = do
   let content = RequestBody.String <$> reqBody
   let url = host <> "/" <> path
-  let req = AX.defaultRequest
+  let
+    req =
+      AX.defaultRequest
         { method = Left DELETE
         , url = url
         , content = content
-        , responseFormat = ResponseFormat.string }
+        , responseFormat = ResponseFormat.string
+        }
   result <- AX.request req
   decodeResponse result
 
 head :: String -> String -> Aff ApiResponse
 head host path = AX.request req >>= decodeResponse
   where
-    req = AX.defaultRequest
+  req =
+    AX.defaultRequest
       { method = Left HEAD
       , responseFormat = ResponseFormat.string
-      , url = host <> "/" <> path }
+      , url = host <> "/" <> path
+      }
 
 decodeResponse :: Either AX.Error (AX.Response String) -> Aff ApiResponse
 decodeResponse (Right res) = pure (decodeBody res)
@@ -142,9 +156,10 @@ decodeBody :: AX.Response String -> ApiResponse
 decodeBody res =
   { status: unwrapStatusCode res.status
   , body: res.body
-  , headers: Map.fromFoldable $ unwrapHeader <$> res.headers }
+  , headers: Map.fromFoldable $ unwrapHeader <$> res.headers
+  }
   where
-    unwrapHeader (ResponseHeader name value) = Tuple name value
+  unwrapHeader (ResponseHeader name value) = Tuple name value
 
 unwrapStatusCode :: StatusCode -> Int
 unwrapStatusCode (StatusCode c) = c

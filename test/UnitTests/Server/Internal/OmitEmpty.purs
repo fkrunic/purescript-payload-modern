@@ -1,7 +1,6 @@
 module Test.UnitTests.Server.Internal.OmitEmpty where
 
 import Prelude
-
 import Payload.Server.Internal.OmitEmpty (omitEmpty)
 import Payload.Internal.Route (Undefined(..))
 import Test.Unit (TestSuite, suite, test)

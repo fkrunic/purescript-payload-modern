@@ -1,10 +1,9 @@
 module Payload.Server.DecodeBody
-       ( class DecodeBody
-       , decodeBody
-       ) where
+  ( class DecodeBody
+  , decodeBody
+  ) where
 
 import Prelude
-
 import Data.Bifunctor (lmap)
 import Data.Either (Either)
 import Data.Maybe (Maybe(..))

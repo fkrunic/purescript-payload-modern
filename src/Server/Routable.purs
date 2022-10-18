@@ -1,14 +1,13 @@
 module Payload.Server.Routable
-       ( class Routable
-       , mkRouter
-       , class RoutableList
-       , mkRouterList
-       , HandlerEntry
-       , Outcome(Success, Failure, Forward)
-       ) where
+  ( class Routable
+  , mkRouter
+  , class RoutableList
+  , mkRouterList
+  , HandlerEntry
+  , Outcome(Success, Failure, Forward)
+  ) where
 
 import Prelude
-
 import Control.Monad.Except (runExceptT)
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
@@ -43,34 +42,39 @@ import Record as Record
 import Type.Equality (class TypeEquals)
 import Type.Proxy (Proxy(..))
 
-type RoutingTrie = Trie HandlerEntry
+type RoutingTrie
+  = Trie HandlerEntry
 
-type HandlerEntry =
-  { handler :: RequestUrl -> HTTP.Request -> HTTP.Response -> Aff Outcome
-  , route :: List Segment }
+type HandlerEntry
+  = { handler :: RequestUrl -> HTTP.Request -> HTTP.Response -> Aff Outcome
+    , route :: List Segment
+    }
 
-type RawHandler = RequestUrl -> HTTP.Request -> HTTP.Response -> Aff Outcome
+type RawHandler
+  = RequestUrl -> HTTP.Request -> HTTP.Response -> Aff Outcome
 
-data Outcome = Success | Failure | Forward String
+data Outcome
+  = Success
+  | Failure
+  | Forward String
 
-class Routable routesSpec guardsSpec handlers guards |
-  routesSpec guardsSpec -> handlers,
-  guardsSpec -> guards where
-  mkRouter :: Spec { routes :: routesSpec, guards :: guardsSpec }
-              -> { handlers :: handlers, guards :: guards }
-              -> Either String RoutingTrie
+class Routable routesSpec guardsSpec handlers guards | routesSpec guardsSpec -> handlers
+, guardsSpec -> guards where
+  mkRouter ::
+    Spec { routes :: routesSpec, guards :: guardsSpec } ->
+    { handlers :: handlers, guards :: guards } ->
+    Either String RoutingTrie
 
 instance routableRootRecord ::
-  (
-  -- Parse out child routes from root
+  ( -- Parse out child routes from root
     Row.Union rootSpec DefaultParentRoute mergedSpec
   , Row.Nub mergedSpec rootSpecWithDefaults
   , TypeEquals
       (Record rootSpecWithDefaults)
       { params :: Record rootParams
       , guards :: Guards rootGuards
-      | childRoutes}
-
+      | childRoutes
+      }
   -- Recurse through child routes
   , RowToList childRoutes childRoutesList
   , RoutableList
@@ -81,11 +85,12 @@ instance routableRootRecord ::
       guardsSpec
       handlers
       guards
-  ) => Routable
-         (Record rootSpec)
-         (Record guardsSpec)
-         handlers
-         guards where
+  ) =>
+  Routable
+    (Record rootSpec)
+    (Record guardsSpec)
+    handlers
+    guards where
   mkRouter _ { handlers, guards } =
     mkRouterList
       (Proxy :: _ childRoutesList)
@@ -97,26 +102,18 @@ instance routableRootRecord ::
       guards
       Trie.empty
 
-class RoutableList
-      (routesSpecList :: RowList Type)
-      (basePath :: Symbol)
-      (baseParams :: Row Type)
-      (baseGuards :: GuardList)
-      (guardsSpec :: Row Type)
-      handlers
-      guards
-      | routesSpecList guardsSpec -> handlers
-      , guardsSpec -> guards where
+class RoutableList (routesSpecList :: RowList Type) (basePath :: Symbol) (baseParams :: Row Type) (baseGuards :: GuardList) (guardsSpec :: Row Type) handlers guards | routesSpecList guardsSpec -> handlers
+, guardsSpec -> guards where
   mkRouterList ::
-    Proxy routesSpecList
-    -> Proxy basePath
-    -> Proxy (Record baseParams)
-    -> Guards baseGuards
-    -> Proxy (Record guardsSpec)
-    -> handlers
-    -> guards
-    -> RoutingTrie
-    -> Either String RoutingTrie
+    Proxy routesSpecList ->
+    Proxy basePath ->
+    Proxy (Record baseParams) ->
+    Guards baseGuards ->
+    Proxy (Record guardsSpec) ->
+    handlers ->
+    guards ->
+    RoutingTrie ->
+    Either String RoutingTrie
 
 instance routableListNil :: RoutableList RL.Nil basePath baseParams baseGuards guardsSpec handlers guards where
   mkRouterList _ _ _ _ _ _ _ trie = Right trie
@@ -130,61 +127,63 @@ instance routableListCons ::
   , Handleable (Route method path (Record specWithDefaults)) handler basePath baseParams baseGuards guardsSpec (Record guards)
   , RoutableList remRoutes basePath baseParams baseGuards guardsSpec (Record handlers) (Record guards)
   , Row.Cons routeName handler h' handlers
-
   , Symbol.Append basePath path fullPath
   , ParseUrl fullPath urlParts
   , ToSegments urlParts
-  ) => RoutableList (RL.Cons routeName (Route method path (Record spec)) remRoutes)
-                    basePath
-                    baseParams
-                    baseGuards
-                    guardsSpec
-                    (Record handlers)
-                    (Record guards)
-                    where
+  ) =>
+  RoutableList
+    (RL.Cons routeName (Route method path (Record spec)) remRoutes)
+    basePath
+    baseParams
+    baseGuards
+    guardsSpec
+    (Record handlers)
+    (Record guards) where
   mkRouterList _ basePath baseParams baseGuards guardsSpec handlers guards trie = do
     newTrie <- insertRoute (Lit method : routePath) handler trie
-    trieWithRest <- mkRouterList (Proxy :: Proxy remRoutes)
-          basePath
-          baseParams
-          baseGuards
-          guardsSpec
-          handlers
-          guards
-          newTrie
+    trieWithRest <-
+      mkRouterList (Proxy :: Proxy remRoutes)
+        basePath
+        baseParams
+        baseGuards
+        guardsSpec
+        handlers
+        guards
+        newTrie
     case method of
       "GET" -> orElse (const trieWithRest) $ insertRoute (Lit "HEAD" : routePath) headHandler trieWithRest
       _ -> pure trieWithRest
     where
-      method :: String
-      method = reflectSymbol (Proxy :: Proxy method)
+    method :: String
+    method = reflectSymbol (Proxy :: Proxy method)
 
-      routePath :: List Segment
-      routePath = UrlParsing.asSegments (Proxy :: Proxy fullPath)
+    routePath :: List Segment
+    routePath = UrlParsing.asSegments (Proxy :: Proxy fullPath)
 
-      handler :: RawHandler
-      handler url req res =
-        methodHandler url req res
+    handler :: RawHandler
+    handler url req res =
+      methodHandler url req res
         # executeHandler res
 
-      headHandler :: RawHandler
-      headHandler url req res =
-        methodHandler url req res
+    headHandler :: RawHandler
+    headHandler url req res =
+      methodHandler url req res
         <#> Resp.setBody EmptyBody
         # executeHandler res
-      
-      methodHandler :: MethodHandler
-      methodHandler = handle
-                      (Proxy :: _ basePath)
-                      baseParams
-                      baseGuards
-                      (GuardTypes :: _ (Record guardsSpec))
-                      (Route :: Route method path (Record specWithDefaults))
-                      payloadHandler
-                      guards
 
-      payloadHandler :: handler
-      payloadHandler = get (Proxy :: Proxy routeName) handlers
+    methodHandler :: MethodHandler
+    methodHandler =
+      handle
+        (Proxy :: _ basePath)
+        baseParams
+        baseGuards
+        (GuardTypes :: _ (Record guardsSpec))
+        (Route :: Route method path (Record specWithDefaults))
+        payloadHandler
+        guards
+
+    payloadHandler :: handler
+    payloadHandler = get (Proxy :: Proxy routeName) handlers
 
 executeHandler :: HTTP.Response -> Result RawResponse -> Aff Outcome
 executeHandler res mHandler = do
@@ -206,11 +205,9 @@ instance routableListConsRoutes ::
   ( IsSymbol parentName
   , IsSymbol basePath
   , IsSymbol path
-  
   -- Extra check to fail earlier and get more sensible errors for
   -- invalid parent route URL specs
   , PayloadUrl.DecodeUrl path parentParams
-
   -- Parse out child routes from parent params
   , Row.Union parentSpec DefaultParentRoute mergedSpec
   , Row.Nub mergedSpec parentSpecWithDefaults
@@ -218,57 +215,62 @@ instance routableListConsRoutes ::
       (Record parentSpecWithDefaults)
       { params :: Record parentParams
       , guards :: Guards parentGuards
-      | childRoutes}
+      | childRoutes
+      }
   , Row.Union baseParams parentParams childParams
   , GuardParsing.Append baseGuards parentGuards childGuards
-
-  , Row.Cons parentName (Record childHandlers) handlers' handlers 
-
+  , Row.Cons parentName (Record childHandlers) handlers' handlers
   -- Recurse through child routes
   , RowToList childRoutes childRoutesList
   , Symbol.Append basePath path childBasePath
   , RoutableList childRoutesList childBasePath childParams childGuards guardsSpec (Record childHandlers) (Record guards)
-
   -- Iterate through rest of list routes
   , RoutableList remRoutes basePath baseParams baseGuards guardsSpec (Record handlers) (Record guards)
-  ) => RoutableList (RL.Cons parentName (Routes path (Record parentSpec)) remRoutes)
-                    basePath
-                    baseParams
-                    baseGuards
-                    guardsSpec
-                    (Record handlers)
-                    (Record guards) where
+  ) =>
+  RoutableList
+    (RL.Cons parentName (Routes path (Record parentSpec)) remRoutes)
+    basePath
+    baseParams
+    baseGuards
+    guardsSpec
+    (Record handlers)
+    (Record guards) where
   mkRouterList _ basePath baseParams baseGuards guardsSpec handlers guards trie =
     case trieWithChildRoutes of
-      Right newTrie -> mkRouterList (Proxy :: Proxy remRoutes)
-                      basePath
-                      baseParams
-                      baseGuards
-                      guardsSpec
-                      handlers
-                      guards
-                      newTrie
-      Left e -> Left $ "Could not insert child routes for path '"
-                 <> reflectSymbol (Proxy :: Proxy path)
-                 <> "': " <> e
+      Right newTrie ->
+        mkRouterList (Proxy :: Proxy remRoutes)
+          basePath
+          baseParams
+          baseGuards
+          guardsSpec
+          handlers
+          guards
+          newTrie
+      Left e ->
+        Left
+          $ "Could not insert child routes for path '"
+          <> reflectSymbol (Proxy :: Proxy path)
+          <> "': "
+          <> e
     where
-      childHandlers = Record.get (Proxy :: _ parentName) handlers
-      trieWithChildRoutes = mkRouterList
-                            (Proxy :: _ childRoutesList)
-                            (Proxy :: _ childBasePath)
-                            (Proxy :: _ (Record childParams))
-                            (Guards :: _ childGuards)
-                            guardsSpec
-                            childHandlers
-                            guards
-                            trie
+    childHandlers = Record.get (Proxy :: _ parentName) handlers
+    trieWithChildRoutes =
+      mkRouterList
+        (Proxy :: _ childRoutesList)
+        (Proxy :: _ childBasePath)
+        (Proxy :: _ (Record childParams))
+        (Guards :: _ childGuards)
+        guardsSpec
+        childHandlers
+        guards
+        trie
 
 insertRoute :: List Segment -> RawHandler -> RoutingTrie -> Either String RoutingTrie
-insertRoute route handler trie = lmap wrapError $ Trie.insert {route, handler} route trie
+insertRoute route handler trie = lmap wrapError $ Trie.insert { route, handler } route trie
   where
-    wrapError :: String -> String
-    wrapError _ = "Could not insert route for path '" <> show route <> "' into routing trie"
+  wrapError :: String -> String
+  wrapError _ = "Could not insert route for path '" <> show route <> "' into routing trie"
 
 orElse :: forall a b c. (a -> c) -> Either a c -> Either b c
-orElse _ (Right v) = Right v 
-orElse f (Left v) = Right (f v) 
+orElse _ (Right v) = Right v
+orElse f (Left v) = Right (f v)

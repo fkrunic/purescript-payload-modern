@@ -1,5 +1,5 @@
 module Payload.Server.Path
-       ( resolve
-       ) where
+  ( resolve
+  ) where
 
 foreign import resolve :: Array String -> String

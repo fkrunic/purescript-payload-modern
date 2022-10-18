@@ -1,7 +1,6 @@
 module Payload.Server.Internal.UrlString where
 
 import Prelude
-
 import Data.List (List, (:))
 import Data.List as List
 import Data.Newtype (wrap)
@@ -15,5 +14,5 @@ urlToSegments = pathToSegments >>> (map unsafeDecodeURIComponent)
 pathToSegments :: String -> List String
 pathToSegments = dropEmpty <<< List.fromFoldable <<< String.split (wrap "/")
   where
-    dropEmpty ("" : xs) = dropEmpty xs
-    dropEmpty xs = xs
+  dropEmpty ("" : xs) = dropEmpty xs
+  dropEmpty xs = xs

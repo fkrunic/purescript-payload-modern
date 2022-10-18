@@ -1,17 +1,14 @@
 module Payload.Server.Guards
-       ( headers
-       , rawRequest
-       , cookies
-
-       , class ToGuardVal
-       , toGuardVal
-
-       , class RunGuards
-       , runGuards
-       ) where
+  ( headers
+  , rawRequest
+  , cookies
+  , class ToGuardVal
+  , toGuardVal
+  , class RunGuards
+  , runGuards
+  ) where
 
 import Prelude
-
 import Control.Monad.Except (lift, throwError)
 import Data.Either (Either(..))
 import Data.Map (Map)
@@ -40,23 +37,23 @@ import Type.Proxy (Proxy(..))
 class ToGuardVal a b where
   toGuardVal :: a -> Result b
 
-instance toGuardValEitherFailureVal
-  :: ToGuardVal (Either Failure a) a where
+instance toGuardValEitherFailureVal ::
+  ToGuardVal (Either Failure a) a where
   toGuardVal (Left err) = throwError err
   toGuardVal (Right res) = pure res
 else instance toGuardValEitherResponseVal ::
-  EncodeResponse err
-  => ToGuardVal (Either (Response err) a) a where
+  EncodeResponse err =>
+  ToGuardVal (Either (Response err) a) a where
   toGuardVal (Left res) = do
     raw <- Resp.encodeResponse res
-    throwError (Error raw) 
+    throwError (Error raw)
   toGuardVal (Right res) = pure res
 else instance toGuardValEitherValVal ::
-  EncodeResponse err
-  => ToGuardVal (Either err a) a where
+  EncodeResponse err =>
+  ToGuardVal (Either err a) a where
   toGuardVal (Left res) = do
     raw <- Resp.encodeResponse (Resp.internalError res)
-    throwError (Error raw) 
+    throwError (Error raw)
   toGuardVal (Right res) = pure res
 else instance toGuardValIdentity :: ToGuardVal a a where
   toGuardVal = pure
@@ -65,8 +62,8 @@ else instance toGuardValIdentity :: ToGuardVal a a where
 headers :: HTTP.Request -> Aff Headers
 headers req = pure (Headers.fromFoldable headersArr)
   where
-    headersArr :: Array (Tuple String String)
-    headersArr = Object.toUnfoldable $ HTTP.requestHeaders req
+  headersArr :: Array (Tuple String String)
+  headersArr = Object.toUnfoldable $ HTTP.requestHeaders req
 
 -- | Guard for retrieving raw underlying request
 rawRequest :: HTTP.Request -> Aff HTTP.Request
@@ -76,20 +73,17 @@ rawRequest req = pure req
 cookies :: HTTP.Request -> Aff (Map String String)
 cookies req = pure (Cookies.requestCookies req)
 
-type GuardFn a = HTTP.Request -> Aff a
+type GuardFn a
+  = HTTP.Request -> Aff a
 
-class RunGuards
-  (guardNames :: GuardList)
-  (guardsSpec :: Row Type)
-  (allGuards :: Row Type)
-  (results :: Row Type)
-  (routeGuardSpec :: Row Type) | guardNames guardsSpec allGuards -> routeGuardSpec where
-  runGuards :: Guards guardNames
-               -> GuardTypes (Record guardsSpec)
-               -> Record allGuards
-               -> Record results
-               -> HTTP.Request
-               -> Result (Record routeGuardSpec)
+class RunGuards (guardNames :: GuardList) (guardsSpec :: Row Type) (allGuards :: Row Type) (results :: Row Type) (routeGuardSpec :: Row Type) | guardNames guardsSpec allGuards -> routeGuardSpec where
+  runGuards ::
+    Guards guardNames ->
+    GuardTypes (Record guardsSpec) ->
+    Record allGuards ->
+    Record results ->
+    HTTP.Request ->
+    Result (Record routeGuardSpec)
 
 instance runGuardsNil :: RunGuards GNil guardsSpec allGuards routeGuardSpec routeGuardSpec where
   runGuards _ _ _ results _ = pure results
@@ -102,7 +96,8 @@ instance runGuardsCons ::
   , Row.Lacks name results
   , ToGuardVal guardRes guardVal
   , RunGuards rest guardsSpec allGuards newResults routeGuardSpec
-  ) => RunGuards (GCons name rest) guardsSpec allGuards results routeGuardSpec where
+  ) =>
+  RunGuards (GCons name rest) guardsSpec allGuards results routeGuardSpec where
   runGuards _ _ allGuards results req = do
     let (guardHandler :: GuardFn guardRes) = Record.get (Proxy :: Proxy name) (to allGuards)
     (guardHandlerResult :: guardRes) <- lift $ guardHandler req

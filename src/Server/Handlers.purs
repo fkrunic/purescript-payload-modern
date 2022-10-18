@@ -1,12 +1,11 @@
 -- | Contains various built-in handlers for e.g. returning static files.
 module Payload.Server.Handlers
-       ( File(File)
-       , directory
-       , file
-       ) where
+  ( File(File)
+  , directory
+  , file
+  ) where
 
 import Prelude
-
 import Control.Monad.Except (ExceptT(..), throwError)
 import Data.Array as Array
 import Data.Either (Either(..))
@@ -36,30 +35,35 @@ import Unsafe.Coerce (unsafeCoerce)
 -- | Attempts to return an appropriate MIME type, defaulting
 -- | to "text/plain".
 -- | Fails with 404 Not Found if file cannot be found.
-data File = File String
+data File
+  = File String
 
 instance encodeResponseFile :: EncodeResponse File where
   encodeResponse (Response { body: File path }) = do
     exists <- ExceptT (liftEffect (SyncAff.exists path) >>= (Right >>> pure))
-    if not exists
-      then throwError notFoundError
-      else do
-        stat <- ExceptT $ FsAff.stat path >>= (Right >>> pure)
-        if Stats.isFile stat then do
-          fileStream <- liftEffect $ createReadStream path
-          let mimeType = fromMaybe "text/plain" $ MimeTypes.pathToMimeType path
-          pure $ Response
-             { status: Status.ok
-             , headers: Headers.fromFoldable
-                 [ Tuple "Content-Type" mimeType
-                 , Tuple "Content-Length" (show (fileSize stat))
-                 ]
-             , body: StreamBody (unsafeCoerce fileStream) }
-          else throwError notFoundError
+    if not exists then
+      throwError notFoundError
+    else do
+      stat <- ExceptT $ FsAff.stat path >>= (Right >>> pure)
+      if Stats.isFile stat then do
+        fileStream <- liftEffect $ createReadStream path
+        let mimeType = fromMaybe "text/plain" $ MimeTypes.pathToMimeType path
+        pure
+          $ Response
+              { status: Status.ok
+              , headers:
+                  Headers.fromFoldable
+                    [ Tuple "Content-Type" mimeType
+                    , Tuple "Content-Length" (show (fileSize stat))
+                    ]
+              , body: StreamBody (unsafeCoerce fileStream)
+              }
+      else
+        throwError notFoundError
 
 instance readForeignFile :: ReadForeign File where
   readImpl f = File <$> readString f
-  
+
 fileSize :: Stats.Stats -> Int
 fileSize (Stats.Stats statsObj) = Int.round statsObj.size
 
@@ -71,11 +75,12 @@ file path _ = pure (File path)
 -- | Protects against directory traversal attacks.
 directory :: forall f. Foldable f => String -> f String -> Aff (Either Failure File)
 directory root path = do
-  rootPath <- pure (Path.resolve [root])
-  requestedPath <- pure (Path.resolve $ [root] <> Array.fromFoldable path)
-  if String.indexOf (String.Pattern rootPath) requestedPath == Just 0
-     then pure $ Right $ File requestedPath
-     else pure $ Left notFoundError
+  rootPath <- pure (Path.resolve [ root ])
+  requestedPath <- pure (Path.resolve $ [ root ] <> Array.fromFoldable path)
+  if String.indexOf (String.Pattern rootPath) requestedPath == Just 0 then
+    pure $ Right $ File requestedPath
+  else
+    pure $ Left notFoundError
 
 notFoundError :: Failure
 notFoundError = Error (Response.notFound (StringBody "File not found"))

@@ -10,7 +10,6 @@ module Payload.Headers
   ) where
 
 import Prelude
-
 import Data.Foldable (class Foldable, foldl)
 import Data.Map (Map)
 import Data.Map as Map
@@ -19,7 +18,8 @@ import Data.Tuple (Tuple(..))
 import Data.Unfoldable (class Unfoldable)
 import Payload.Internal.Utils as Utils
 
-newtype Headers = Headers (Map String String)
+newtype Headers
+  = Headers (Map String String)
 
 instance showHeaders :: Show Headers where
   show (Headers h) = show h

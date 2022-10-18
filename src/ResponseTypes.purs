@@ -1,7 +1,6 @@
 module Payload.ResponseTypes where
 
 import Prelude
-
 import Control.Monad.Except (ExceptT)
 import Data.Newtype (class Newtype)
 import Effect.Aff (Aff)
@@ -10,17 +9,21 @@ import Payload.Headers (Headers)
 -- | The type of a server response, before encoding the body.
 -- | Responses with modified statuses or headers can be created
 -- | by returning this type (directly or via helper functions).
-newtype Response r = Response
+newtype Response r
+  = Response
   { status :: HttpStatus
   , headers :: Headers
-  , body :: r }
+  , body :: r
+  }
 
-type ResponseContent r =
-  { status :: HttpStatus
-  , headers :: Headers
-  , body :: r }
+type ResponseContent r
+  = { status :: HttpStatus
+    , headers :: Headers
+    , body :: r
+    }
 
-type HttpStatus = { code :: Int, reason :: String }
+type HttpStatus
+  = { code :: Int, reason :: String }
 
 derive instance newtypeResponse :: Newtype (Response a) _
 instance eqResponse :: Eq a => Eq (Response a) where
@@ -29,22 +32,30 @@ instance showResponse :: Show a => Show (Response a) where
   show (Response r) = show r
 
 -- | An empty response body
-data Empty = Empty
+data Empty
+  = Empty
 
 -- | A JSON response body
-newtype Json a = Json a
+newtype Json a
+  = Json a
 
 -- | All server error responses ultimately resolve into this type
-data Failure = Forward String | Error RawResponse
+data Failure
+  = Forward String
+  | Error RawResponse
 instance showFailure :: Show Failure where
   show (Forward s) = "Forward '" <> s <> "'"
   show (Error e) = "Error " <> show e
 
 -- | All server responses ultimately resolve into this type. 
-type RawResponse = Response ResponseBody
+type RawResponse
+  = Response ResponseBody
 
 -- | The base types of body responses that can be returned.
-data ResponseBody = StringBody String | StreamBody UnsafeStream | EmptyBody
+data ResponseBody
+  = StringBody String
+  | StreamBody UnsafeStream
+  | EmptyBody
 data UnsafeStream
 
 instance eqResponseBody :: Eq ResponseBody where
@@ -58,5 +69,5 @@ instance showResponseBody :: Show ResponseBody where
   show (StreamBody _) = "StreamBody"
 
 -- | Internally handlers and guards all de-sugar into this type.
-type Result a = ExceptT Failure Aff a
-
+type Result a
+  = ExceptT Failure Aff a

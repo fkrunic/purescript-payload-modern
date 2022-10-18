@@ -1,7 +1,6 @@
 module Test.IntegrationTests.Client.Options where
 
 import Prelude
-
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff)
@@ -15,8 +14,8 @@ import Test.Config (TestConfig)
 import Test.Helpers (bodyEquals, withServer)
 import Test.Unit (TestSuite, suite, test)
 
-getHeader :: forall r. String -> {guards :: {headers :: Headers} | r} -> Aff String
-getHeader key {guards: {headers}} = case Headers.lookup key headers of
+getHeader :: forall r. String -> { guards :: { headers :: Headers } | r } -> Aff String
+getHeader key { guards: { headers } } = case Headers.lookup key headers of
   Just contentType -> pure contentType
   Nothing -> pure "not found"
 
@@ -25,35 +24,39 @@ tests cfg = do
   suite "Client options" do
     suite "extraHeaders" do
       test "adds header to request" do
-        let spec = Spec :: _ {
-                               guards :: { headers :: Headers }
-                               , routes :: {
-                                   foo :: GET "/foo" {
-                                      guards :: Guards ("headers" : Nil),
-                                      response :: String
-                                   }
-                               }
-                             }
+        let
+          spec =
+            Spec ::
+              _ { guards :: { headers :: Headers }
+              , routes ::
+                  { foo ::
+                      GET "/foo" { guards :: Guards ("headers" : Nil)
+                      , response :: String
+                      }
+                  }
+              }
         let api = { guards: { headers: Guards.headers }, handlers: { foo: getHeader "accept" } }
-        let opts = cfg.clientOpts { extraHeaders = Headers.fromFoldable [Tuple "Accept" "some content type"] }
+        let opts = cfg.clientOpts { extraHeaders = Headers.fromFoldable [ Tuple "Accept" "some content type" ] }
         withServer spec api do
           let client = mkGuardedClient opts spec
           res <- client.foo {}
           bodyEquals "some content type" res
       test "single endpoint header overrides client extraHeader" do
-        let spec = Spec :: _ {
-                               guards :: { headers :: Headers }
-                               , routes :: {
-                                   foo :: GET "/foo" {
-                                      guards :: Guards ("headers" : Nil),
-                                      response :: String
-                                   }
-                               }
-                             }
+        let
+          spec =
+            Spec ::
+              _ { guards :: { headers :: Headers }
+              , routes ::
+                  { foo ::
+                      GET "/foo" { guards :: Guards ("headers" : Nil)
+                      , response :: String
+                      }
+                  }
+              }
         let api = { guards: { headers: Guards.headers }, handlers: { foo: getHeader "accept" } }
-        let opts = cfg.clientOpts { extraHeaders = Headers.fromFoldable [Tuple "Accept" "some content type"] }
+        let opts = cfg.clientOpts { extraHeaders = Headers.fromFoldable [ Tuple "Accept" "some content type" ] }
         withServer spec api do
           let client = mkGuardedClient opts spec
-          let reqOpts = defaultReqOpts { extraHeaders = Headers.fromFoldable [Tuple "Accept" "overridden value"] }
+          let reqOpts = defaultReqOpts { extraHeaders = Headers.fromFoldable [ Tuple "Accept" "overridden value" ] }
           res <- client.foo_ reqOpts {}
           bodyEquals "overridden value" res

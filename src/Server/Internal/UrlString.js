@@ -1,5 +1,5 @@
 "use strict";
 
-export function unsafeDecodeURIComponent (str) {
+export function unsafeDecodeURIComponent(str) {
   return decodeURIComponent(str);
 }

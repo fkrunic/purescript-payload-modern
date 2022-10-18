@@ -4,7 +4,8 @@ import Data.Maybe (Maybe(..))
 import Payload.ContentType (class HasContentType)
 import Simple.JSON as SimpleJson
 
-class (HasContentType body) <= EncodeBody body where
+class
+  (HasContentType body) <= EncodeBody body where
   encodeBody :: body -> String
 
 instance encodeBodyString :: EncodeBody String where

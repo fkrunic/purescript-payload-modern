@@ -28,7 +28,8 @@ instance hasContentTypeArray :: HasContentType (Array r) where
 instance hasContentTypeMaybe :: HasContentType a => HasContentType (Maybe a) where
   getContentType _ = getContentType (Proxy :: _ a)
 
-type ContentType = String
+type ContentType
+  = String
 
 any :: ContentType
 any = "*/*"

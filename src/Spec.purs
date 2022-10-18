@@ -1,26 +1,27 @@
 -- | This module contains all of the types and kinds that can appear
 -- | in an API spec.
 module Payload.Spec
-       ( Spec(Spec)
-       , Route(Route)
-       , GET
-       , HEAD
-       , OPTIONS
-       , POST
-       , PUT
-       , DELETE
-       , Routes(Routes)
-       , Guards(Guards)
-       , GuardList
-       , GNil
-       , GCons
-       , type (:)
-       , Nil
-       ) where
+  ( Spec(Spec)
+  , Route(Route)
+  , GET
+  , HEAD
+  , OPTIONS
+  , POST
+  , PUT
+  , DELETE
+  , Routes(Routes)
+  , Guards(Guards)
+  , GuardList
+  , GNil
+  , GCons
+  , type (:)
+  , Nil
+  ) where
 
 -- | Wrapper for writing type-level specs
 data Spec :: forall k. k -> Type
-data Spec apiSpec = Spec
+data Spec apiSpec
+  = Spec
 
 -- | Type-level representation of an endpoint route, meant to be used
 -- | in combination with the method convenience types below.
@@ -31,26 +32,33 @@ data Spec apiSpec = Spec
 -- | DELETE "/api/posts/<..rest>"
 -- | ```
 data Route :: forall k. Symbol -> Symbol -> k -> Type
-data Route (method :: Symbol) (path :: Symbol) spec = Route
+data Route (method :: Symbol) (path :: Symbol) spec
+  = Route
 
 type GET :: forall k. Symbol -> k -> Type
-type GET = Route "GET"
+type GET
+  = Route "GET"
 
 -- | HEAD responses will not contain a body.
 type HEAD :: forall k. Symbol -> k -> Type
-type HEAD = Route "HEAD"
+type HEAD
+  = Route "HEAD"
 
 type OPTIONS :: forall k. Symbol -> k -> Type
-type OPTIONS = Route "OPTIONS"
+type OPTIONS
+  = Route "OPTIONS"
 
 type POST :: forall k. Symbol -> k -> Type
-type POST = Route "POST"
+type POST
+  = Route "POST"
 
 type PUT :: forall k. Symbol -> k -> Type
-type PUT = Route "PUT"
+type PUT
+  = Route "PUT"
 
 type DELETE :: forall k. Symbol -> k -> Type
-type DELETE = Route "DELETE"
+type DELETE
+  = Route "DELETE"
 
 -- | Defines a type-level parent route. Takes a path, which
 -- | is prepended to all child routes, and a spec, which must
@@ -73,15 +81,19 @@ type DELETE = Route "DELETE"
 -- |
 -- |
 data Routes :: forall k. Symbol -> k -> Type
-data Routes (path :: Symbol) routesSpec = Routes
+data Routes (path :: Symbol) routesSpec
+  = Routes
 
 -- | Type-level list of guard names that will be run before calling
 -- | a route or child routes.
-data Guards (g :: GuardList) = Guards
+data Guards (g :: GuardList)
+  = Guards
 
 data GuardList
 foreign import data GNil :: GuardList
 foreign import data GCons :: Symbol -> GuardList -> GuardList
 
 infixr 1 type GCons as :
-type Nil = GNil
+
+type Nil
+  = GNil

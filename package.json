@@ -1,5 +1,13 @@
 {
   "dependencies": {
     "xhr2": "^0.2.1"
-  }
+  },
+  "devDependencies": {
+    "@rowtype-yoga/prettier-plugin-purescript": "^1.11.2",
+    "prettier": "^2.7.1"
+  },
+  "scripts": {
+    "format": "npx prettier --write src && npx prettier --write test",
+    "loc": "find src -name \"*.purs\" | xargs wc -l"
+  }    
 }

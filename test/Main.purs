@@ -1,7 +1,6 @@
 module Test.Main where
 
 import Prelude
-
 import Effect (Effect)
 import Effect.Aff as Aff
 import Test.Config (defaultConfig)
@@ -31,14 +30,13 @@ import Test.UnitTests.Server.Response as ResponseTest
 import Test.Unit (TestSuite, suite)
 import Test.Unit.Main (runTestWith)
 import Test.Unit.Output.Fancy as Fancy
-  
+
 tests :: TestSuite
 tests = do
   let cfg = defaultConfig
   suite "Unit - Shared" do
     UrlParsingTest.tests
     QueryParsingTest.tests
-
   suite "Unit - Server" do
     CookiesTest.tests
     OmitEmptyTest.tests
@@ -47,11 +45,9 @@ tests = do
     ResponseTest.tests
     TrieTest.tests
     UrlTest.tests
-
   suite "Unit - Client" do
     ClientQueryParamsTest.tests
     ClientEncodeParamTest.tests
-
   suite "Integration - Server" do
     BodyTest.tests
     MethodsTest.tests
@@ -59,7 +55,6 @@ tests = do
     GuardsTest.tests
     StatusTest.tests
     RoutingTest.tests
-
   suite "Integration - Client" do
     ClientErrorsTest.tests cfg
     ClientMethodsTest.tests cfg
@@ -69,5 +64,7 @@ tests = do
     ClientContentTypes.tests cfg
 
 main :: Effect Unit
-main = Aff.launchAff_ $ do
-  runTestWith Fancy.runTest tests
+main =
+  Aff.launchAff_
+    $ do
+        runTestWith Fancy.runTest tests

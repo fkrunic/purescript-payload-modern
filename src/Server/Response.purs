@@ -1,83 +1,80 @@
 -- | This module contains various helpers for returning server
 -- | responses.
 module Payload.Server.Response
-       ( status
-       , setStatus
-       , updateStatus
-       , setBody
-       , updateBody
-       , setHeaders
-       , updateHeaders
-
-       , class ToSpecResponse
-       , toSpecResponse
-       , class EncodeResponse
-       , encodeResponse
-
-       , continue
-       , switchingProtocols
-       , processing
-       , ok
-       , created
-       , accepted
-       , nonAuthoritativeInformation
-       , noContent
-       , resetContent
-       , partialContent
-       , multiStatus
-       , alreadyReported
-       , imUsed
-       , multipleChoices
-       , movedPermanently
-       , found
-       , seeOther
-       , notModified
-       , useProxy
-       , temporaryRedirect
-       , permanentRedirect
-       , badRequest
-       , unauthorized
-       , paymentRequired
-       , forbidden
-       , notFound
-       , methodNotAllowed
-       , notAcceptable
-       , proxyAuthenticationRequired
-       , requestTimeout
-       , conflict
-       , gone
-       , lengthRequired
-       , preconditionFailed
-       , payloadTooLarge
-       , uriTooLong
-       , unsupportedMediaType
-       , rangeNotSatisfiable
-       , expectationFailed
-       , imATeapot
-       , misdirectedRequest
-       , unprocessableEntity
-       , locked
-       , failedDependency
-       , upgradeRequired
-       , preconditionRequired
-       , tooManyRequests
-       , requestHeaderFieldsTooLarge
-       , unavailableForLegalReasons
-       , internalError
-       , notImplemented
-       , badGateway
-       , serviceUnavailable
-       , gatewayTimeout
-       , httpVersionNotSupported
-       , variantAlsoNegotiates
-       , insufficientStorage
-       , loopDetected
-       , notExtended
-       , networkAuthenticationRequired
-       ) where
+  ( status
+  , setStatus
+  , updateStatus
+  , setBody
+  , updateBody
+  , setHeaders
+  , updateHeaders
+  , class ToSpecResponse
+  , toSpecResponse
+  , class EncodeResponse
+  , encodeResponse
+  , continue
+  , switchingProtocols
+  , processing
+  , ok
+  , created
+  , accepted
+  , nonAuthoritativeInformation
+  , noContent
+  , resetContent
+  , partialContent
+  , multiStatus
+  , alreadyReported
+  , imUsed
+  , multipleChoices
+  , movedPermanently
+  , found
+  , seeOther
+  , notModified
+  , useProxy
+  , temporaryRedirect
+  , permanentRedirect
+  , badRequest
+  , unauthorized
+  , paymentRequired
+  , forbidden
+  , notFound
+  , methodNotAllowed
+  , notAcceptable
+  , proxyAuthenticationRequired
+  , requestTimeout
+  , conflict
+  , gone
+  , lengthRequired
+  , preconditionFailed
+  , payloadTooLarge
+  , uriTooLong
+  , unsupportedMediaType
+  , rangeNotSatisfiable
+  , expectationFailed
+  , imATeapot
+  , misdirectedRequest
+  , unprocessableEntity
+  , locked
+  , failedDependency
+  , upgradeRequired
+  , preconditionRequired
+  , tooManyRequests
+  , requestHeaderFieldsTooLarge
+  , unavailableForLegalReasons
+  , internalError
+  , notImplemented
+  , badGateway
+  , serviceUnavailable
+  , gatewayTimeout
+  , httpVersionNotSupported
+  , variantAlsoNegotiates
+  , insufficientStorage
+  , loopDetected
+  , notExtended
+  , networkAuthenticationRequired
+  ) where
 
 import Prelude
-
 import Control.Monad.Except (throwError)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
@@ -125,69 +122,93 @@ updateHeaders f (Response res) = Response (res { headers = f res.headers })
 class ToSpecResponse (docRoute :: Symbol) a b where
   toSpecResponse :: Proxy docRoute -> a -> Result (Response b)
 
-instance toSpecResponseEitherFailureVal
-  :: EncodeResponse a
-  => ToSpecResponse docRoute (Either Failure a) a where
+instance toSpecResponseEitherFailureVal ::
+  EncodeResponse a =>
+  ToSpecResponse docRoute (Either Failure a) a where
   toSpecResponse _ (Left err) = throwError err
   toSpecResponse _ (Right res) = pure (ok res)
-else instance toSpecResponseEitherFailureResponse
-  :: EncodeResponse a
-  => ToSpecResponse docRoute (Either Failure (Response a)) a where
+else instance toSpecResponseEitherFailureResponse ::
+  EncodeResponse a =>
+  ToSpecResponse docRoute (Either Failure (Response a)) a where
   toSpecResponse _ (Left err) = throwError err
   toSpecResponse _ (Right res) = pure res
-else instance toSpecResponseEitherResponseVal
-  :: EncodeResponse err
-  => ToSpecResponse docRoute (Either (Response err) a) a where
+else instance toSpecResponseEitherResponseVal ::
+  EncodeResponse err =>
+  ToSpecResponse docRoute (Either (Response err) a) a where
   toSpecResponse _ (Left res) = do
     raw <- encodeResponse res
-    throwError (Error raw) 
+    throwError (Error raw)
   toSpecResponse _ (Right res) = pure (ok res)
-else instance toSpecResponseEitherResponseResponse
-  :: EncodeResponse err
-  => ToSpecResponse docRoute (Either (Response err) (Response a)) a where
+else instance toSpecResponseEitherResponseResponse ::
+  EncodeResponse err =>
+  ToSpecResponse docRoute (Either (Response err) (Response a)) a where
   toSpecResponse _ (Left res) = do
     raw <- encodeResponse res
-    throwError (Error raw) 
+    throwError (Error raw)
   toSpecResponse _ (Right res) = pure res
 else instance toSpecResponseEitherValVal ::
   ( EncodeResponse a
   , EncodeResponse err
-  ) => ToSpecResponse docRoute (Either err a) a where
+  ) =>
+  ToSpecResponse docRoute (Either err a) a where
   toSpecResponse _ (Left res) = do
     raw <- encodeResponse (internalError res)
-    throwError (Error raw) 
+    throwError (Error raw)
   toSpecResponse _ (Right res) = pure (ok res)
 else instance toSpecResponseEitherValResponse ::
   ( EncodeResponse a
   , EncodeResponse err
-  ) => ToSpecResponse docRoute (Either err (Response a)) a where
+  ) =>
+  ToSpecResponse docRoute (Either err (Response a)) a where
   toSpecResponse _ (Left res) = do
     raw <- encodeResponse (internalError res)
-    throwError (Error raw) 
+    throwError (Error raw)
   toSpecResponse _ (Right res) = pure res
-else instance toSpecResponseResponse
-  :: EncodeResponse a
-  => ToSpecResponse docRoute (Response a) a where
+else instance toSpecResponseResponse ::
+  EncodeResponse a =>
+  ToSpecResponse docRoute (Response a) a where
   toSpecResponse _ res = pure res
-else instance toSpecResponseIdentity
-  :: EncodeResponse a
-  => ToSpecResponse docRoute a a where
+else instance toSpecResponseIdentity ::
+  EncodeResponse a =>
+  ToSpecResponse docRoute a a where
   toSpecResponse _ res = pure (ok res)
 else instance toSpecResponseFail ::
-  ( Fail (Text "Could not match or convert handler response type to spec response type."
-          |> Text ""
-          |> Text "           Route: " <> Text docRoute
-          |> Text "Handler response: " <> Quote a
-          |> Text "   Spec response: " <> Quote b
-          |> Text ""
-          |> Text "Specifically, no type class instance was found for"
-          |> Text ""
-          |> Text "ToSpecResponse docRoute"
-          |> Text "               " <> Quote a
-          |> Text "               " <> Quote b
-          |> Text ""
-         )
-  ) => ToSpecResponse docRoute a b where
+  ( Fail ( Text "Could not match or convert handler response type to spec response type."
+      |>
+      Text ""
+      |>
+      Text "           Route: "
+      <>
+      Text docRoute
+      |>
+      Text "Handler response: "
+      <>
+      Quote a
+      |>
+      Text "   Spec response: "
+      <>
+      Quote b
+      |>
+      Text ""
+      |>
+      Text "Specifically, no type class instance was found for"
+      |>
+      Text ""
+      |>
+      Text "ToSpecResponse docRoute"
+      |>
+      Text "               "
+      <>
+      Quote a
+      |>
+      Text "               "
+      <>
+      Quote b
+      |>
+      Text ""
+    )
+  ) =>
+  ToSpecResponse docRoute a b where
   toSpecResponse res = unsafeCoerce res
 
 -- | Any types that can appear in a server response body and show up in the API
@@ -199,45 +220,67 @@ instance encodeResponseResponseBody :: EncodeResponse ResponseBody where
   encodeResponse = pure
 else instance encodeResponseRecord ::
   ( SimpleJson.WriteForeign (Record r)
-  ) => EncodeResponse (Record r) where
+  ) =>
+  EncodeResponse (Record r) where
   encodeResponse (Response r) = encodeResponse (Response $ r { body = Json r.body })
 else instance encodeResponseArray ::
   ( SimpleJson.WriteForeign (Array r)
-  ) => EncodeResponse (Array r) where
+  ) =>
+  EncodeResponse (Array r) where
   encodeResponse (Response r) = encodeResponse (Response $ r { body = Json r.body })
 else instance encodeResponseJson ::
   ( SimpleJson.WriteForeign r
-  ) => EncodeResponse (Json r) where
-  encodeResponse (Response r@{ body: Json json }) = pure $ Response $
+  ) =>
+  EncodeResponse (Json r) where
+  encodeResponse (Response r@{ body: Json json }) =
+    pure
+      $ Response
+      $
         { status: r.status
         , headers: Headers.setIfNotDefined "content-type" ContentType.json r.headers
-        , body: StringBody (SimpleJson.writeJSON json) }
+        , body: StringBody (SimpleJson.writeJSON json)
+        }
 else instance encodeResponseString :: EncodeResponse String where
-  encodeResponse (Response r) = pure $ Response
-                   { status: r.status
-                   , headers: Headers.setIfNotDefined "content-type" ContentType.plain r.headers
-                   , body: StringBody r.body }
+  encodeResponse (Response r) =
+    pure
+      $ Response
+          { status: r.status
+          , headers: Headers.setIfNotDefined "content-type" ContentType.plain r.headers
+          , body: StringBody r.body
+          }
 else instance encodeResponseStream ::
-  ( TypeEquals (Stream.Stream r) (Stream.Stream (read :: Stream.Read | r')))
-  => EncodeResponse (Stream.Stream r) where
-  encodeResponse (Response r) = pure $ Response
-                   { status: r.status
-                   , headers: Headers.setIfNotDefined "content-type" ContentType.plain r.headers
-                   , body: StreamBody (unsafeCoerce r.body) }
+  (TypeEquals (Stream.Stream r) (Stream.Stream ( read :: Stream.Read | r' ))) =>
+  EncodeResponse (Stream.Stream r) where
+  encodeResponse (Response r) =
+    pure
+      $ Response
+          { status: r.status
+          , headers: Headers.setIfNotDefined "content-type" ContentType.plain r.headers
+          , body: StreamBody (unsafeCoerce r.body)
+          }
 else instance encodeResponseMaybe :: EncodeResponse a => EncodeResponse (Maybe a) where
-  encodeResponse (Response { body: Nothing }) = pure $ Response
-                   { status: Status.notFound
-                   , headers: Headers.empty
-                   , body: EmptyBody }
-  encodeResponse (Response r@{ body: Just body }) = encodeResponse $ Response
-                   { status: r.status
-                   , headers: r.headers
-                   , body }
+  encodeResponse (Response { body: Nothing }) =
+    pure
+      $ Response
+          { status: Status.notFound
+          , headers: Headers.empty
+          , body: EmptyBody
+          }
+  encodeResponse (Response r@{ body: Just body }) =
+    encodeResponse
+      $ Response
+          { status: r.status
+          , headers: r.headers
+          , body
+          }
 else instance encodeResponseEmpty :: EncodeResponse Empty where
-  encodeResponse (Response r) = pure $ Response
-                   { status: r.status
-                   , headers: r.headers
-                   , body: EmptyBody }
+  encodeResponse (Response r) =
+    pure
+      $ Response
+          { status: r.status
+          , headers: r.headers
+          , body: EmptyBody
+          }
 
 -- | Status code: 100
 continue :: forall a. a -> Response a

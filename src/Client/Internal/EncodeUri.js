@@ -1,10 +1,10 @@
 "use strict";
 
-export function encodeUri (str) {
+export function encodeUri(str) {
   try {
-    return encodeURIComponent(str)
+    return encodeURIComponent(str);
   } catch (e) {
-    console.error(e)
-    return str
-  }  
+    console.error(e);
+    return str;
+  }
 }

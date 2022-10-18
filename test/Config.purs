@@ -2,8 +2,8 @@ module Test.Config where
 
 import Payload.Client as Client
 
-type TestConfig =
-  { clientOpts :: Client.Options }
+type TestConfig
+  = { clientOpts :: Client.Options }
 
 defaultConfig :: TestConfig
 defaultConfig =

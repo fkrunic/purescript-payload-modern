@@ -1,12 +1,11 @@
 module Payload.Client.QueryParams
-       ( class EncodeQueryParam
-       , encodeQueryParam
-       , class EncodeQueryParamMulti
-       , encodeQueryParamMulti
-       ) where
+  ( class EncodeQueryParam
+  , encodeQueryParam
+  , class EncodeQueryParamMulti
+  , encodeQueryParamMulti
+  ) where
 
 import Prelude
-
 import Data.Maybe (Maybe(..))
 import Data.String as String
 import Data.Tuple (Tuple(..))
@@ -37,11 +36,11 @@ class EncodeQueryParamMulti a where
 instance encodeQueryParamMultiObjectArrayString :: EncodeQueryParamMulti (Object (Array String)) where
   encodeQueryParamMulti o = Just (joinParams (encodeArray <$> Object.toUnfoldable o))
     where
-      joinParams :: Array String -> String
-      joinParams = String.joinWith "&"
-      
-      encodeArray :: Tuple String (Array String) -> String
-      encodeArray (Tuple k vals) = joinParams (encodeVal k <$> vals)
+    joinParams :: Array String -> String
+    joinParams = String.joinWith "&"
 
-      encodeVal :: String -> String -> String
-      encodeVal key val = encodeUri key <> "=" <> encodeUri val
+    encodeArray :: Tuple String (Array String) -> String
+    encodeArray (Tuple k vals) = joinParams (encodeVal k <$> vals)
+
+    encodeVal :: String -> String -> String
+    encodeVal key val = encodeUri key <> "=" <> encodeUri val

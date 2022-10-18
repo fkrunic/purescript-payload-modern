@@ -184,4 +184,3 @@ notExtended = { code: 510, reason: "Not Extended" }
 
 networkAuthenticationRequired :: HttpStatus
 networkAuthenticationRequired = { code: 511, reason: "Network Authentication Required" }
-
