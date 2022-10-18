@@ -58,9 +58,9 @@ derive instance newtypeResponse :: Newtype (Response a) _
 
 instance eqResponse :: Eq a => Eq (Response a) where
   eq (Response r1) (Response r2) = r1 == r2
-  
+
 instance showResponse :: Show a => Show (Response a) where
-  show (Response r) = show r  
+  show (Response r) = show r
 
 instance showFailure :: Show Failure where
   show (Forward s) = "Forward '" <> s <> "'"
@@ -71,7 +71,7 @@ instance eqResponseBody :: Eq ResponseBody where
   eq EmptyBody EmptyBody = true
   eq (StreamBody _) (StreamBody _) = false
   eq _ _ = false
-  
+
 instance showResponseBody :: Show ResponseBody where
   show (StringBody s) = s
   show EmptyBody = "EmptyBody"

@@ -14,13 +14,13 @@ class DecodeBody body where
   decodeBody :: String -> Either String body
 
 instance decodeBodyRecord :: DecodeJson (Record r) => DecodeBody (Record r) where
-  decodeBody s = do 
-    parsed <- lmap show $ parseJson s 
+  decodeBody s = do
+    parsed <- lmap show $ parseJson s
     lmap show $ decodeJson parsed
 
 instance decodeBodyArray :: DecodeJson (Array r) => DecodeBody (Array r) where
-  decodeBody s = do 
-    parsed <- lmap show $ parseJson s 
+  decodeBody s = do
+    parsed <- lmap show $ parseJson s
     lmap show $ decodeJson parsed
 
 instance decodeBodyString :: DecodeBody String where

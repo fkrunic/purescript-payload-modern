@@ -126,45 +126,37 @@ class ToSpecResponse (docRoute :: Symbol) a b where
 instance toSpecResponseEitherFailureVal :: EncodeResponse a => ToSpecResponse docRoute (Either Failure a) a where
   toSpecResponse _ (Left err) = throwError err
   toSpecResponse _ (Right res) = pure (ok res)
-
 else instance toSpecResponseEitherFailureResponse :: EncodeResponse a => ToSpecResponse docRoute (Either Failure (Response a)) a where
   toSpecResponse _ (Left err) = throwError err
   toSpecResponse _ (Right res) = pure res
-
 else instance toSpecResponseEitherResponseVal :: EncodeResponse err => ToSpecResponse docRoute (Either (Response err) a) a where
   toSpecResponse _ (Left res) = do
     raw <- except $ encodeResponse res
     throwError (Error raw)
   toSpecResponse _ (Right res) = pure (ok res)
-
 else instance toSpecResponseEitherResponseResponse :: EncodeResponse err => ToSpecResponse docRoute (Either (Response err) (Response a)) a where
   toSpecResponse _ (Left res) = do
     raw <- except $ encodeResponse res
     throwError (Error raw)
   toSpecResponse _ (Right res) = pure res
-
 else instance toSpecResponseEitherValVal :: (EncodeResponse a, EncodeResponse err) => ToSpecResponse docRoute (Either err a) a where
   toSpecResponse _ (Left res) = do
     raw <- except $ encodeResponse (internalError res)
     throwError (Error raw)
   toSpecResponse _ (Right res) = pure (ok res)
-
 else instance toSpecResponseEitherValResponse :: (EncodeResponse a, EncodeResponse err) => ToSpecResponse docRoute (Either err (Response a)) a where
   toSpecResponse _ (Left res) = do
     raw <- except $ encodeResponse (internalError res)
     throwError (Error raw)
   toSpecResponse _ (Right res) = pure res
-
 else instance toSpecResponseResponse ::
   EncodeResponse a =>
   ToSpecResponse docRoute (Response a) a where
   toSpecResponse _ res = pure res
-
 else instance toSpecResponseIdentity ::
   EncodeResponse a =>
   ToSpecResponse docRoute a a where
   toSpecResponse _ res = pure (ok res)
-  
 else instance toSpecResponseFail ::
   ( Fail ( Text "Could not match or convert handler response type to spec response type."
       |>
@@ -223,10 +215,10 @@ instance encodeResponseJson :: EncodeJson r => EncodeResponse (Json r) where
   encodeResponse (Response { body: Json json, status, headers }) =
     Right
       $ Response
-        { status
-        , headers: Headers.setIfNotDefined "content-type" ContentType.json headers
-        , body: StringBody (stringify $ encodeJson json)
-        }
+          { status
+          , headers: Headers.setIfNotDefined "content-type" ContentType.json headers
+          , body: StringBody (stringify $ encodeJson json)
+          }
 
 instance encodeResponseString :: EncodeResponse String where
   encodeResponse (Response r) =
@@ -237,10 +229,9 @@ instance encodeResponseString :: EncodeResponse String where
           , body: StringBody r.body
           }
 
-instance encodeResponseStream :: 
-  TypeEquals (Stream.Stream r) (Stream.Stream ( read :: Stream.Read | r' )) => 
+instance encodeResponseStream ::
+  TypeEquals (Stream.Stream r) (Stream.Stream ( read :: Stream.Read | r' )) =>
   EncodeResponse (Stream.Stream r) where
-
   encodeResponse (Response { status, headers, body }) =
     Right
       $ Response

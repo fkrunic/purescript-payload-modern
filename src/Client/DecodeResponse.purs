@@ -42,30 +42,23 @@ class DecodeResponse r where
 instance decodeResponseString :: DecodeResponse String where
   decodeResponse (StringBody s) = Right s
   decodeResponse b = unexpectedError "StringBody" b
-
-else instance decodeResponseStream :: 
+else instance decodeResponseStream ::
   TypeEquals (Stream.Stream r) (Stream.Stream ( read :: Stream.Read | r' )) =>
   DecodeResponse (Stream.Stream r) where
-
   decodeResponse (StreamBody s) = Right (unsafeCoerce s)
   decodeResponse b = unexpectedError "StreamBody" b
-
 else instance decodeResponseRecord :: DecodeJson (Record r) => DecodeResponse (Record r) where
-  decodeResponse (StringBody s) = do 
+  decodeResponse (StringBody s) = do
     parsed <- lmap JsonDecodingError $ parseJson s
     lmap JsonDecodingError $ decodeJson parsed
-    
   decodeResponse b = unexpectedError "StringBody" b
-
 else instance decodeResponseArray :: DecodeJson (Array r) => DecodeResponse (Array r) where
-  decodeResponse (StringBody s) = do 
+  decodeResponse (StringBody s) = do
     parsed <- lmap JsonDecodingError $ parseJson s
     lmap JsonDecodingError $ decodeJson parsed
-
   decodeResponse b = unexpectedError "StringBody" b
 -- | Adding a default instance allows the client to be incomplete:
 -- | not all responses are supported.
-
 else instance decodeResponseDefault ::
   Warn ( Text "API client cannot query all of endpoints in API spec:"
       |>
