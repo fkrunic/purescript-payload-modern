@@ -4,19 +4,24 @@ module Payload.Server.DecodeBody
   ) where
 
 import Prelude
+import Data.Argonaut.Decode (class DecodeJson, decodeJson)
+import Data.Argonaut.Decode.Parser (parseJson)
 import Data.Bifunctor (lmap)
 import Data.Either (Either)
 import Data.Maybe (Maybe(..))
-import Simple.JSON as SimpleJson
 
 class DecodeBody body where
   decodeBody :: String -> Either String body
 
-instance decodeBodyRecord :: SimpleJson.ReadForeign (Record r) => DecodeBody (Record r) where
-  decodeBody = SimpleJson.readJSON >>> lmap show
+instance decodeBodyRecord :: DecodeJson (Record r) => DecodeBody (Record r) where
+  decodeBody s = do 
+    parsed <- lmap show $ parseJson s 
+    lmap show $ decodeJson parsed
 
-instance decodeBodyArray :: SimpleJson.ReadForeign (Array r) => DecodeBody (Array r) where
-  decodeBody = SimpleJson.readJSON >>> lmap show
+instance decodeBodyArray :: DecodeJson (Array r) => DecodeBody (Array r) where
+  decodeBody s = do 
+    parsed <- lmap show $ parseJson s 
+    lmap show $ decodeJson parsed
 
 instance decodeBodyString :: DecodeBody String where
   decodeBody = pure
