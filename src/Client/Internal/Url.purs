@@ -14,11 +14,7 @@ import Type.Proxy (Proxy(..))
 class EncodeUrl (urlStr :: Symbol) (params :: Row Type) | urlStr -> params where
   encodeUrl :: Proxy urlStr -> Record params -> String
 
-instance encodeUrlRecord ::
-  ( ParseUrl urlStr urlParts
-  , WriteUrl urlParts params
-  ) =>
-  EncodeUrl urlStr params where
+instance encodeUrlRecord :: (ParseUrl urlStr urlParts, WriteUrl urlParts params) => EncodeUrl urlStr params where
   encodeUrl _ params = writeUrl (UrlListProxy :: _ urlParts) params
 
 class WriteUrl (urlParts :: UrlList) (params :: Row Type) where
