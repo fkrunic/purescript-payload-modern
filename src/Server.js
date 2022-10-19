@@ -1,9 +1,7 @@
-export function onError(server) {
-  return function (cb) {
-    return function () {
-      server.on("error", function (error) {
-        cb(error)();
-      });
-    };
-  };
+"use strict";
+
+export function onError (server, cb) {
+  server.on("error", function(error) {
+    cb(error)();
+  })
 }

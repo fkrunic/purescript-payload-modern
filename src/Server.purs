@@ -25,6 +25,7 @@ import Effect.Aff as Aff
 import Effect.Class (liftEffect)
 import Effect.Console (log)
 import Effect.Exception (Error)
+import Effect.Uncurried (EffectFn2, runEffectFn2)
 import Node.HTTP as HTTP
 import Node.URL (URL)
 import Node.URL as Url
@@ -214,10 +215,6 @@ runHandlers { logger } routerTrie reqUrl req res = do
     pure (Forward "No match could handle")
   handleNext _ Nil = pure (Forward "No match could handle")
 
--- showMatches :: List HandlerEntry -> String
--- showMatches matches = "    " <> String.joinWith "\n    " (Array.fromFoldable $ showMatch <$> matches)
---   where
---     showMatch = showRouteUrl <<< _.route
 showUrl :: RequestUrl -> String
 showUrl { method, path } = method <> " " <> fullPath
   where
@@ -243,15 +240,14 @@ urlPath url =
     # toMaybe
     # maybe (Left "No path") Right
 
--- urlQuery :: URL -> Maybe String
--- urlQuery url = url.query # toMaybe
-foreign import onError :: HTTP.Server -> (Error -> Effect Unit) -> Effect Unit
+foreign import onError :: EffectFn2 HTTP.Server (Error -> Effect Unit) Unit
+-- foreign import onError :: HTTP.Server -> (Error -> Effect Unit) -> Effect Unit
 
 listen :: Config -> Server -> HTTP.ListenOptions -> Aff (Either String Unit)
 listen { logger } server@(Server httpServer) opts =
   Aff.makeAff
     $ \cb -> do
-        onError httpServer \error -> cb (Right (Left (show error)))
+        runEffectFn2 onError httpServer \error -> cb (Right (Left (show error)))
         HTTP.listen httpServer opts (logger.log startedMsg *> cb (Right (Right unit)))
         pure $ Aff.Canceler (\error -> liftEffect (logger.logError (errorMsg error)) *> close server)
   where
