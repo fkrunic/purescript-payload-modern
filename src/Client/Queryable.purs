@@ -13,7 +13,6 @@ import Data.HTTP.Method (CustomMethod, Method(..), unCustomMethod)
 import Data.Maybe (Maybe(..), maybe)
 import Data.MediaType (MediaType(..))
 import Data.String (Pattern(..), joinWith, stripSuffix) as String
-import Data.String.Utils (startsWith) as String
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
@@ -25,7 +24,6 @@ import Payload.Client.Internal.Url as PayloadUrl
 import Payload.Client.Options (LogLevel(..), Options, RequestOptions)
 import Payload.Client.Response (ClientError(..), ClientResponse)
 import Payload.ContentType (class HasContentType, getContentType)
-import Payload.Debug (formatJsonString)
 import Payload.Headers (Headers)
 import Payload.Headers as Headers
 import Payload.Internal.Route (DefaultRouteSpec, Undefined)
@@ -338,7 +336,7 @@ printResponse (Right { status, statusText, headers, body }) =
     <> printHeaders headers
     <> "\n"
     <> "Body:\n"
-    <> printBody body
+    <> body
     <> "\n"
     <> "--------------------------------\n"
   where
@@ -349,15 +347,8 @@ printResponse (Right { status, statusText, headers, body }) =
   printHeaders [] = ""
   printHeaders hdrs = (String.joinWith "  \n" (printHeader <$> hdrs)) <> "\n"
 
-  contentIsJson = maybe false (String.startsWith "application/json") $ lookupHeader "content-type" headers
-
   printHeader :: ResponseHeader -> String
   printHeader (ResponseHeader field val) = field <> " " <> val
-
-  printBody :: String -> String
-  printBody b
-    | contentIsJson = formatJsonString b
-    | otherwise = b
 
 lookupHeader :: String -> Array ResponseHeader -> Maybe String
 lookupHeader _ headers = Array.findMap matchingHeaderVal headers
