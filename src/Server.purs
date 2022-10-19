@@ -56,30 +56,6 @@ data LogLevel
   | LogNormal
   | LogDebug
 
-instance eqLogLevel :: Eq LogLevel where
-  eq LogSilent LogSilent = true
-  eq LogError LogError = true
-  eq LogNormal LogNormal = true
-  eq LogDebug LogDebug = true
-  eq _ _ = false
-
-instance ordLogLevel :: Ord LogLevel where
-  compare l1 l2 = rank l1 `compare` rank l2
-    where
-    rank :: LogLevel -> Int
-    rank LogSilent = 0
-    rank LogError = 1
-    rank LogNormal = 2
-    rank LogDebug = 3
-
-defaultOpts :: Options
-defaultOpts =
-  { backlog: Nothing
-  , hostname: "0.0.0.0"
-  , port: 3000
-  , logLevel: LogNormal
-  }
-
 newtype Server
   = Server HTTP.Server
 
@@ -91,6 +67,8 @@ type Logger
     , logDebug :: String -> Effect Unit
     , logError :: String -> Effect Unit
     }
+
+foreign import onError :: EffectFn2 HTTP.Server (Error -> Effect Unit) Unit
 
 -- | Start server with default options, ignoring unexpected startup errors.
 launch ::
@@ -152,10 +130,6 @@ startGuarded opts apiSpec api = do
       pure (const server <$> listenResult)
     Left err -> pure (Left err)
 
--- dumpRoutes :: Trie HandlerEntry -> Effect Unit
--- dumpRoutes = log <<< showRoutes
--- showRoutes :: Trie HandlerEntry -> String
--- showRoutes routerTrie = Trie.dumpEntries (_.route <$> routerTrie)
 mkConfig :: Options -> Config
 mkConfig { logLevel } = { logger: mkLogger logLevel }
 
@@ -240,9 +214,6 @@ urlPath url =
     # toMaybe
     # maybe (Left "No path") Right
 
-foreign import onError :: EffectFn2 HTTP.Server (Error -> Effect Unit) Unit
--- foreign import onError :: HTTP.Server -> (Error -> Effect Unit) -> Effect Unit
-
 listen :: Config -> Server -> HTTP.ListenOptions -> Aff (Either String Unit)
 listen { logger } server@(Server httpServer) opts =
   Aff.makeAff
@@ -261,3 +232,27 @@ close (Server server) =
     $ \cb -> do
         HTTP.close server (cb (Right unit))
         pure Aff.nonCanceler
+
+defaultOpts :: Options
+defaultOpts =
+  { backlog: Nothing
+  , hostname: "0.0.0.0"
+  , port: 3000
+  , logLevel: LogNormal
+  }
+
+instance eqLogLevel :: Eq LogLevel where
+  eq LogSilent LogSilent = true
+  eq LogError LogError = true
+  eq LogNormal LogNormal = true
+  eq LogDebug LogDebug = true
+  eq _ _ = false
+
+instance ordLogLevel :: Ord LogLevel where
+  compare l1 l2 = rank l1 `compare` rank l2
+    where
+    rank :: LogLevel -> Int
+    rank LogSilent = 0
+    rank LogError = 1
+    rank LogNormal = 2
+    rank LogDebug = 3  
