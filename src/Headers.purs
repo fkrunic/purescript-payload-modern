@@ -14,9 +14,9 @@ import Data.Foldable (class Foldable, foldl)
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe)
+import Data.String (toLower)
 import Data.Tuple (Tuple(..))
 import Data.Unfoldable (class Unfoldable)
-import Payload.Internal.Utils as Utils
 
 newtype Headers
   = Headers (Map String String)
@@ -37,7 +37,7 @@ empty = Headers Map.empty
 
 set :: String -> String -> Headers -> Headers
 set name value (Headers headers) =
-  Headers (Map.insert (Utils.toLowerCase name) value headers)
+  Headers (Map.insert (toLower name) value headers)
 
 setIfNotDefined :: String -> String -> Headers -> Headers
 setIfNotDefined name _ headers | member name headers = headers
@@ -50,7 +50,7 @@ toUnfoldable :: forall f. Unfoldable f => Headers -> f (Tuple String String)
 toUnfoldable (Headers h) = Map.toUnfoldable h
 
 lookup :: String -> Headers -> Maybe String
-lookup key (Headers h) = Map.lookup (Utils.toLowerCase key) h
+lookup key (Headers h) = Map.lookup (toLower key) h
 
 member :: String -> Headers -> Boolean
-member key (Headers h) = Map.member (Utils.toLowerCase key) h
+member key (Headers h) = Map.member (toLower key) h
