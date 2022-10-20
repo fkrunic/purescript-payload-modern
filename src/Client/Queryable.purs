@@ -10,7 +10,7 @@ import Affjax.StatusCode (StatusCode(..))
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.HTTP.Method (CustomMethod, Method(..), unCustomMethod)
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.MediaType (MediaType(..))
 import Data.String (Pattern(..), joinWith, stripSuffix) as String
 import Data.Tuple (Tuple(..))
@@ -107,6 +107,7 @@ bodyResponse res body = Response (Record.insert (Proxy :: _ "body") body rest)
 asPayloadResponse ::
   AX.Response String ->
   Response String
+
 asPayloadResponse res = Response (Record.insert (Proxy :: _ "body") res.body rest)
   where
   rest = statusAndHeaders res
@@ -115,6 +116,7 @@ statusAndHeaders ::
   forall a.
   AX.Response a ->
   { status :: HttpStatus, headers :: Headers }
+
 statusAndHeaders res = { status, headers }
   where
   status = { code: unwrapStatus res.status, reason: res.statusText }
@@ -134,12 +136,9 @@ encodeUrl opts url params = do
   let 
     baseUrl = stripTrailingSlash opts.baseUrl
   Just $ baseUrl <> path
-  
 
 stripTrailingSlash :: String -> String
-stripTrailingSlash s = case String.stripSuffix (String.Pattern "/") s of
-  Just stripped -> stripped
-  Nothing -> s
+stripTrailingSlash s = fromMaybe s $ String.stripSuffix (String.Pattern "/") s
 
 appendHeaders :: forall a. Headers -> AX.Request a -> AX.Request a
 appendHeaders headers req = req { headers = newHeaders }
