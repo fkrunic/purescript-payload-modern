@@ -53,6 +53,174 @@ class Queryable route (basePath :: Symbol) (baseParams :: Row Type) payload res 
     Options ->
     ClientFnWithOptions payload res
 
+type Request
+  = { method :: Method
+    , url :: String
+    , body :: Maybe RequestBody.RequestBody
+    , headers :: Array RequestHeader
+    , opts :: Options
+    , reqOpts :: RequestOptions
+    }    
+
+makeRequest :: forall body. DecodeResponse body => Request -> Aff (ClientResponse body)
+makeRequest { method, url, body, headers, opts, reqOpts } = do
+  case opts.logLevel of
+    LogDebug -> liftEffect (log (printRequest req))
+    _ -> pure unit
+  res <- AX.request req
+  case opts.logLevel of
+    LogDebug -> liftEffect (log (printResponse res))
+    _ -> pure unit
+  pure (decodeAffjaxResponse res)
+  where
+  defaultReq =
+    AX.defaultRequest
+      { method = Left method
+      , url = url
+      , content = body
+      , responseFormat = ResponseFormat.string
+      , headers = AX.defaultRequest.headers <> headers
+      }
+  req = appendHeaders (opts.extraHeaders <> reqOpts.extraHeaders) defaultReq
+
+printRequest :: AX.Request String -> String
+printRequest { method, url, headers, content } =
+  "DEBUG Request:\n"
+    <> "--------------------------------\n"
+    <> printMethod method
+    <> " "
+    <> url
+    <> "\n"
+    <> printHeaders headers
+    <> printContent content
+    <> "--------------------------------\n"
+  where
+  printMethod :: Either Method CustomMethod -> String
+  printMethod (Left m) = show m
+  printMethod (Right m) = unCustomMethod m
+
+  printHeaders :: Array RequestHeader -> String
+  printHeaders [] = ""
+  printHeaders hdrs = headersStr <> "\n"
+    where
+    headersStr = String.joinWith "  \n" (printHeader <$> hdrs)
+
+  printHeader :: RequestHeader -> String
+  printHeader (Accept mediaType) = "accept " <> show mediaType
+  printHeader (ContentType mediaType) = "content-type " <> show mediaType
+  printHeader (RequestHeader key val) = key <> " " <> val
+
+  printContent :: Maybe RequestBody.RequestBody -> String
+  printContent (Just (RequestBody.String s)) = s <> "\n"
+  printContent (Just _) = "(non-String body)\n"
+  printContent Nothing = ""
+
+printResponse :: Either AX.Error (AX.Response String) -> String
+printResponse (Left error) =
+  "DEBUG Response:\n"
+    <> "--------------------------------\n"
+    <> AX.printError error
+    <> "--------------------------------\n"
+printResponse (Right { status, statusText, headers, body }) =
+  "DEBUG Response:\n"
+    <> "--------------------------------\n"
+    <> "Status: "
+    <> printStatus status
+    <> " "
+    <> statusText
+    <> "\n"
+    <> "Headers:\n"
+    <> printHeaders headers
+    <> "\n"
+    <> "Body:\n"
+    <> body
+    <> "\n"
+    <> "--------------------------------\n"
+  where
+  printStatus :: StatusCode -> String
+  printStatus (StatusCode code) = show code
+
+  printHeaders :: Array ResponseHeader -> String
+  printHeaders [] = ""
+  printHeaders hdrs = (String.joinWith "  \n" (printHeader <$> hdrs)) <> "\n"
+
+  printHeader :: ResponseHeader -> String
+  printHeader (ResponseHeader field val) = field <> " " <> val
+
+lookupHeader :: String -> Array ResponseHeader -> Maybe String
+lookupHeader _ headers = Array.findMap matchingHeaderVal headers
+  where
+  matchingHeaderVal :: ResponseHeader -> Maybe String
+  matchingHeaderVal (ResponseHeader k val)
+    | k == "content-type" = Just val
+    | otherwise = Nothing
+
+decodeAffjaxResponse ::
+  forall body.
+  DecodeResponse body =>
+  Either AX.Error (AX.Response String) ->
+  ClientResponse body
+decodeAffjaxResponse (Left err) = Left (RequestError { message: AX.printError err })
+decodeAffjaxResponse (Right res@{ status: StatusCode s })
+  | s >= 200 && s < 300 = do
+    case decodeResponse (StringBody res.body) of
+      Right decoded -> Right (bodyResponse res decoded)
+      Left err -> Left (decodeError res err)
+decodeAffjaxResponse (Right res) = Left (StatusError { response: asPayloadResponse res })
+
+decodeError :: AX.Response String -> DecodeResponseError -> ClientError
+decodeError res error = DecodeError { error, response: asPayloadResponse res }
+
+bodyResponse :: forall a. AX.Response String -> a -> Response a
+bodyResponse res body = Response (Record.insert (Proxy :: _ "body") body rest)
+  where
+  rest = statusAndHeaders res
+
+asPayloadResponse ::
+  AX.Response String ->
+  Response String
+asPayloadResponse res = Response (Record.insert (Proxy :: _ "body") res.body rest)
+  where
+  rest = statusAndHeaders res
+
+statusAndHeaders ::
+  forall a.
+  AX.Response a ->
+  { status :: HttpStatus, headers :: Headers }
+statusAndHeaders res = { status, headers }
+  where
+  status = { code: unwrapStatus res.status, reason: res.statusText }
+  headers = Headers.fromFoldable (asHeaderTuple <$> res.headers)
+  unwrapStatus (StatusCode code) = code
+
+asHeaderTuple :: ResponseHeader -> Tuple String String
+asHeaderTuple (ResponseHeader name value) = Tuple name value
+
+encodeUrl ::
+  forall url params.
+  PayloadUrl.EncodeUrl url params =>
+  Options -> Proxy url -> Record params -> Maybe String
+  
+encodeUrl opts url params = do 
+  path <- PayloadUrl.encodeUrl url params
+  let 
+    baseUrl = stripTrailingSlash opts.baseUrl
+  Just $ baseUrl <> path
+  
+
+stripTrailingSlash :: String -> String
+stripTrailingSlash s = case String.stripSuffix (String.Pattern "/") s of
+  Just stripped -> stripped
+  Nothing -> s
+
+appendHeaders :: forall a. Headers -> AX.Request a -> AX.Request a
+appendHeaders headers req = req { headers = newHeaders }
+  where
+  newHeaders = req.headers <> (asAxHeader <$> Headers.toUnfoldable headers)
+
+  asAxHeader :: Tuple String String -> RequestHeader
+  asAxHeader (Tuple key val) = RequestHeader key val
+
 instance queryableGetRoute ::
   ( Row.Lacks "body" route
   , Row.Union route DefaultRouteSpec mergedRoute
@@ -252,149 +420,6 @@ else instance queryableOptionsRoute ::
         makeRequest { method: OPTIONS, url, body: Nothing, headers: [], opts, reqOpts }
       Nothing -> pure $ Left URIEncodingError
 
-type Request
-  = { method :: Method
-    , url :: String
-    , body :: Maybe RequestBody.RequestBody
-    , headers :: Array RequestHeader
-    , opts :: Options
-    , reqOpts :: RequestOptions
-    }
-
-makeRequest :: forall body. DecodeResponse body => Request -> Aff (ClientResponse body)
-makeRequest { method, url, body, headers, opts, reqOpts } = do
-  case opts.logLevel of
-    LogDebug -> liftEffect (log (printRequest req))
-    _ -> pure unit
-  res <- AX.request req
-  case opts.logLevel of
-    LogDebug -> liftEffect (log (printResponse res))
-    _ -> pure unit
-  pure (decodeAffjaxResponse res)
-  where
-  defaultReq =
-    AX.defaultRequest
-      { method = Left method
-      , url = url
-      , content = body
-      , responseFormat = ResponseFormat.string
-      , headers = AX.defaultRequest.headers <> headers
-      }
-  req = appendHeaders (opts.extraHeaders <> reqOpts.extraHeaders) defaultReq
-
-printRequest :: AX.Request String -> String
-printRequest { method, url, headers, content } =
-  "DEBUG Request:\n"
-    <> "--------------------------------\n"
-    <> printMethod method
-    <> " "
-    <> url
-    <> "\n"
-    <> printHeaders headers
-    <> printContent content
-    <> "--------------------------------\n"
-  where
-  printMethod :: Either Method CustomMethod -> String
-  printMethod (Left m) = show m
-  printMethod (Right m) = unCustomMethod m
-
-  printHeaders :: Array RequestHeader -> String
-  printHeaders [] = ""
-  printHeaders hdrs = headersStr <> "\n"
-    where
-    headersStr = String.joinWith "  \n" (printHeader <$> hdrs)
-
-  printHeader :: RequestHeader -> String
-  printHeader (Accept mediaType) = "accept " <> show mediaType
-  printHeader (ContentType mediaType) = "content-type " <> show mediaType
-  printHeader (RequestHeader key val) = key <> " " <> val
-
-  printContent :: Maybe RequestBody.RequestBody -> String
-  printContent (Just (RequestBody.String s)) = s <> "\n"
-  printContent (Just _) = "(non-String body)\n"
-  printContent Nothing = ""
-
-printResponse :: Either AX.Error (AX.Response String) -> String
-printResponse (Left error) =
-  "DEBUG Response:\n"
-    <> "--------------------------------\n"
-    <> AX.printError error
-    <> "--------------------------------\n"
-printResponse (Right { status, statusText, headers, body }) =
-  "DEBUG Response:\n"
-    <> "--------------------------------\n"
-    <> "Status: "
-    <> printStatus status
-    <> " "
-    <> statusText
-    <> "\n"
-    <> "Headers:\n"
-    <> printHeaders headers
-    <> "\n"
-    <> "Body:\n"
-    <> body
-    <> "\n"
-    <> "--------------------------------\n"
-  where
-  printStatus :: StatusCode -> String
-  printStatus (StatusCode code) = show code
-
-  printHeaders :: Array ResponseHeader -> String
-  printHeaders [] = ""
-  printHeaders hdrs = (String.joinWith "  \n" (printHeader <$> hdrs)) <> "\n"
-
-  printHeader :: ResponseHeader -> String
-  printHeader (ResponseHeader field val) = field <> " " <> val
-
-lookupHeader :: String -> Array ResponseHeader -> Maybe String
-lookupHeader _ headers = Array.findMap matchingHeaderVal headers
-  where
-  matchingHeaderVal :: ResponseHeader -> Maybe String
-  matchingHeaderVal (ResponseHeader k val)
-    | k == "content-type" = Just val
-    | otherwise = Nothing
-
-decodeAffjaxResponse ::
-  forall body.
-  DecodeResponse body =>
-  Either AX.Error (AX.Response String) ->
-  ClientResponse body
-decodeAffjaxResponse (Left err) = Left (RequestError { message: AX.printError err })
-decodeAffjaxResponse (Right res@{ status: StatusCode s })
-  | s >= 200 && s < 300 = do
-    case decodeResponse (StringBody res.body) of
-      Right decoded -> Right (bodyResponse res decoded)
-      Left err -> Left (decodeError res err)
-decodeAffjaxResponse (Right res) = Left (StatusError { response: asPayloadResponse res })
-
-decodeError :: AX.Response String -> DecodeResponseError -> ClientError
-decodeError res error = DecodeError { error, response: asPayloadResponse res }
-
-bodyResponse :: forall a. AX.Response String -> a -> Response a
-bodyResponse res body = Response (Record.insert (Proxy :: _ "body") body rest)
-  where
-  rest = statusAndHeaders res
-
-asPayloadResponse ::
-  AX.Response String ->
-  Response String
-asPayloadResponse res = Response (Record.insert (Proxy :: _ "body") res.body rest)
-  where
-  rest = statusAndHeaders res
-
-statusAndHeaders ::
-  forall a.
-  AX.Response a ->
-  { status :: HttpStatus, headers :: Headers }
-statusAndHeaders res = { status, headers }
-  where
-  status = { code: unwrapStatus res.status, reason: res.statusText }
-  headers = Headers.fromFoldable (asHeaderTuple <$> res.headers)
-  unwrapStatus (StatusCode code) = code
-
-asHeaderTuple :: ResponseHeader -> Tuple String String
-asHeaderTuple (ResponseHeader name value) = Tuple name value
-
 class EncodeOptionalBody (body :: Type) (payload :: Row Type) where
   encodeOptionalBody ::
     Proxy body ->
@@ -452,26 +477,3 @@ else instance encodeUrlWithParamsDefined ::
   EncodeUrlWithParams url rl payload where
   encodeUrlWithParams options url _ payload = encodeUrl options url (to payload).params
 
-encodeUrl ::
-  forall url params.
-  PayloadUrl.EncodeUrl url params =>
-  Options -> Proxy url -> Record params -> Maybe String
-encodeUrl opts url params = do 
-  path <- PayloadUrl.encodeUrl url params
-  let 
-    baseUrl = stripTrailingSlash opts.baseUrl
-  Just $ baseUrl <> path
-  
-
-stripTrailingSlash :: String -> String
-stripTrailingSlash s = case String.stripSuffix (String.Pattern "/") s of
-  Just stripped -> stripped
-  Nothing -> s
-
-appendHeaders :: forall a. Headers -> AX.Request a -> AX.Request a
-appendHeaders headers req = req { headers = newHeaders }
-  where
-  newHeaders = req.headers <> (asAxHeader <$> Headers.toUnfoldable headers)
-
-  asAxHeader :: Tuple String String -> RequestHeader
-  asAxHeader (Tuple key val) = RequestHeader key val
