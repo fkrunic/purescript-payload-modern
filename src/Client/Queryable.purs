@@ -9,19 +9,17 @@ import Affjax.ResponseHeader (ResponseHeader(..))
 import Affjax.StatusCode (StatusCode(..))
 import Data.Array as Array
 import Data.Either (Either(..))
-import Data.HTTP.Method (CustomMethod, Method(..), unCustomMethod)
+import Data.HTTP.Method (Method(..))
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.MediaType (MediaType(..))
-import Data.String (Pattern(..), joinWith, stripSuffix) as String
+import Data.String (Pattern(..), stripSuffix) as String
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff)
-import Effect.Class (liftEffect)
-import Effect.Console (log)
-import Payload.Client.DecodeResponse (class DecodeResponse, DecodeResponseError, decodeResponse)
+import Payload.Client.DecodeResponse (class DecodeResponse, decodeResponse)
 import Payload.Client.EncodeBody (class EncodeBody, encodeBody)
 import Payload.Client.Internal.Query (class EncodeQuery, encodeQuery)
 import Payload.Client.Internal.Url as PayloadUrl
-import Payload.Client.Options (LogLevel(..), Options, RequestOptions)
+import Payload.Client.Options (Options, RequestOptions)
 import Payload.Client.Response (ClientError(..), ClientResponse)
 import Payload.ContentType (class HasContentType, getContentType)
 import Payload.Headers (Headers)
