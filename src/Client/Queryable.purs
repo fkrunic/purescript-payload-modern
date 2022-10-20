@@ -140,13 +140,13 @@ encodeUrl opts url params = do
 stripTrailingSlash :: String -> String
 stripTrailingSlash s = fromMaybe s $ String.stripSuffix (String.Pattern "/") s
 
+asAxHeader :: Tuple String String -> RequestHeader
+asAxHeader (Tuple key val) = RequestHeader key val
+
 appendHeaders :: forall a. Headers -> AX.Request a -> AX.Request a
 appendHeaders headers req = req { headers = newHeaders }
   where
   newHeaders = req.headers <> (asAxHeader <$> Headers.toUnfoldable headers)
-
-  asAxHeader :: Tuple String String -> RequestHeader
-  asAxHeader (Tuple key val) = RequestHeader key val
 
 instance queryableGetRoute ::
   ( Row.Lacks "body" route
