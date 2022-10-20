@@ -6,6 +6,7 @@ import Data.Newtype (unwrap)
 import Effect.Aff (Aff, throwError)
 import Effect.Exception as Ex
 import Payload.Client.DecodeResponse (DecodeResponseError)
+import Payload.Client.QueryParams (EncodingError)
 import Payload.ResponseTypes (Response, ResponseContent)
 
 type ClientResponse body
@@ -15,7 +16,7 @@ data ClientError
   = DecodeError { error :: DecodeResponseError, response :: Response String }
   | StatusError { response :: Response String }
   | RequestError { message :: String }
-  | URIEncodingError
+  | URIEncodingError EncodingError
 
 unwrapResponse :: forall a. Aff (ClientResponse a) -> Aff (ResponseContent a)
 unwrapResponse aff = do
@@ -49,11 +50,11 @@ instance showClientError :: Show ClientError where
   show (DecodeError err) = "DecodeError: " <> show err
   show (StatusError err) = "StatusError: " <> show err
   show (RequestError err) = "RequestError: " <> show err
-  show URIEncodingError = "URIEncodingError"
+  show (URIEncodingError err) = "URIEncodingError: " <> show err
   
 instance eqClientError :: Eq ClientError where
   eq (DecodeError a) (DecodeError b) = a == b
   eq (StatusError a) (StatusError b) = a == b
   eq (RequestError a) (RequestError b) = a == b
-  eq URIEncodingError URIEncodingError = true
+  eq (URIEncodingError a) (URIEncodingError b) = a == b
   eq _ _ = false
