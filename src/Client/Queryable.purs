@@ -64,13 +64,7 @@ type Request
 
 makeRequest :: forall body. DecodeResponse body => Request -> Aff (ClientResponse body)
 makeRequest { method, url, body, headers, opts, reqOpts } = do
-  case opts.logLevel of
-    LogDebug -> liftEffect (log (printRequest req))
-    _ -> pure unit
   res <- AX.request req
-  case opts.logLevel of
-    LogDebug -> liftEffect (log (printResponse res))
-    _ -> pure unit
   pure (decodeAffjaxResponse res)
   where
   defaultReq =
@@ -82,70 +76,6 @@ makeRequest { method, url, body, headers, opts, reqOpts } = do
       , headers = AX.defaultRequest.headers <> headers
       }
   req = appendHeaders (opts.extraHeaders <> reqOpts.extraHeaders) defaultReq
-
-printRequest :: AX.Request String -> String
-printRequest { method, url, headers, content } =
-  "DEBUG Request:\n"
-    <> "--------------------------------\n"
-    <> printMethod method
-    <> " "
-    <> url
-    <> "\n"
-    <> printHeaders headers
-    <> printContent content
-    <> "--------------------------------\n"
-  where
-  printMethod :: Either Method CustomMethod -> String
-  printMethod (Left m) = show m
-  printMethod (Right m) = unCustomMethod m
-
-  printHeaders :: Array RequestHeader -> String
-  printHeaders [] = ""
-  printHeaders hdrs = headersStr <> "\n"
-    where
-    headersStr = String.joinWith "  \n" (printHeader <$> hdrs)
-
-  printHeader :: RequestHeader -> String
-  printHeader (Accept mediaType) = "accept " <> show mediaType
-  printHeader (ContentType mediaType) = "content-type " <> show mediaType
-  printHeader (RequestHeader key val) = key <> " " <> val
-
-  printContent :: Maybe RequestBody.RequestBody -> String
-  printContent (Just (RequestBody.String s)) = s <> "\n"
-  printContent (Just _) = "(non-String body)\n"
-  printContent Nothing = ""
-
-printResponse :: Either AX.Error (AX.Response String) -> String
-printResponse (Left error) =
-  "DEBUG Response:\n"
-    <> "--------------------------------\n"
-    <> AX.printError error
-    <> "--------------------------------\n"
-printResponse (Right { status, statusText, headers, body }) =
-  "DEBUG Response:\n"
-    <> "--------------------------------\n"
-    <> "Status: "
-    <> printStatus status
-    <> " "
-    <> statusText
-    <> "\n"
-    <> "Headers:\n"
-    <> printHeaders headers
-    <> "\n"
-    <> "Body:\n"
-    <> body
-    <> "\n"
-    <> "--------------------------------\n"
-  where
-  printStatus :: StatusCode -> String
-  printStatus (StatusCode code) = show code
-
-  printHeaders :: Array ResponseHeader -> String
-  printHeaders [] = ""
-  printHeaders hdrs = (String.joinWith "  \n" (printHeader <$> hdrs)) <> "\n"
-
-  printHeader :: ResponseHeader -> String
-  printHeader (ResponseHeader field val) = field <> " " <> val
 
 lookupHeader :: String -> Array ResponseHeader -> Maybe String
 lookupHeader _ headers = Array.findMap matchingHeaderVal headers
@@ -200,7 +130,7 @@ encodeUrl ::
   forall url params.
   PayloadUrl.EncodeUrl url params =>
   Options -> Proxy url -> Record params -> Maybe String
-  
+
 encodeUrl opts url params = do 
   path <- PayloadUrl.encodeUrl url params
   let 
