@@ -28,6 +28,7 @@ to generate this file without the comments in this block.
   , "foreign-object"
   , "http-methods"
   , "integers"
+  , "js-uri"
   , "lists"
   , "maybe"
   , "media-types"

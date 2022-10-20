@@ -4,13 +4,14 @@ module Payload.Client.EncodeParam
   ) where
 
 import Prelude
-import Payload.Client.Internal.EncodeUri (encodeUri)
+import Data.Maybe (Maybe(..))
+import JSURI (encodeURIComponent)
 
 class EncodeParam a where
-  encodeParam :: a -> String
+  encodeParam :: a -> Maybe String
 
 instance encodeParamInt :: EncodeParam Int where
-  encodeParam = show
+  encodeParam = show >>> Just
 
 instance encodeParamString :: EncodeParam String where
-  encodeParam = encodeUri
+  encodeParam = encodeURIComponent

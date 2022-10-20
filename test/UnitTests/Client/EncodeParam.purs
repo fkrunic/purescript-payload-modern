@@ -1,6 +1,7 @@
 module Test.UnitTests.Client.EncodeParam where
 
 import Prelude
+import Data.Maybe (Maybe(..))
 import Payload.Client.EncodeParam (encodeParam)
 import Test.Unit (TestSuite, suite, test)
 import Test.Unit.Assert as Assert
@@ -12,8 +13,8 @@ tests =
       suite "EncodeParam Int" do
         test "encodes Int"
           $ do
-              Assert.equal "1" (encodeParam 1)
+              Assert.equal (Just "1") (encodeParam 1)
       suite "EncodeParam String" do
         test "encodes and URL encodes String"
           $ do
-              Assert.equal "john%20doe" (encodeParam "john doe")
+              Assert.equal (Just "john%20doe") (encodeParam "john doe")
