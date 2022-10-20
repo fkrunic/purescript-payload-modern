@@ -91,12 +91,13 @@ decodeAffjaxResponse ::
   Either AX.Error (AX.Response String) ->
   ClientResponse body
 decodeAffjaxResponse (Left err) = Left (RequestError { message: AX.printError err })
-decodeAffjaxResponse (Right res@{ status: StatusCode s })
-  | s >= 200 && s < 300 = do
+decodeAffjaxResponse (Right res@{ status: StatusCode s }) =
+  if s >= 200 && s < 300 
+  then do 
     case decodeResponse (StringBody res.body) of
       Right decoded -> Right (bodyResponse res decoded)
       Left error -> Left $ DecodeError { error, response: asPayloadResponse res }
-decodeAffjaxResponse (Right res) = Left (StatusError { response: asPayloadResponse res })
+  else Left (StatusError { response: asPayloadResponse res })
 
 bodyResponse :: forall a. AX.Response String -> a -> Response a
 bodyResponse res body = Response (Record.insert (Proxy :: _ "body") body rest)
