@@ -1,6 +1,7 @@
 module Test.IntegrationTests.Client.ContentTypes where
 
 import Prelude
+import Control.Monad.Except.Trans (runExceptT)
 import Data.Maybe (Maybe(..))
 import Effect.Aff (Aff)
 import Payload.Client (mkGuardedClient)
@@ -36,7 +37,7 @@ tests cfg = do
       let api = { guards: { headers: Guards.headers }, handlers: { foo: checkContentType } }
       withServer spec api do
         let client = mkGuardedClient cfg.clientOpts spec
-        res <- client.foo {}
+        res <- runExceptT $ client.foo {}
         bodyEquals "no content-type" res
     test "POST adds content-type header" do
       let
@@ -54,7 +55,7 @@ tests cfg = do
       let api = { guards: { headers: Guards.headers }, handlers: { foo: checkContentType } }
       withServer spec api do
         let client = mkGuardedClient cfg.clientOpts spec
-        res <- client.foo { body: "Hello!" }
+        res <- runExceptT $ client.foo { body: "Hello!" }
         bodyEquals ContentType.plain res
     test "PUT adds content-type if body is provided" do
       let
@@ -72,7 +73,7 @@ tests cfg = do
       let api = { guards: { headers: Guards.headers }, handlers: { foo: checkContentType } }
       withServer spec api do
         let client = mkGuardedClient cfg.clientOpts spec
-        res <- client.foo { body: "hello" }
+        res <- runExceptT $ client.foo { body: "hello" }
         bodyEquals ContentType.plain res
     test "PUT omits content-type if body is not provided" do
       let
@@ -89,7 +90,7 @@ tests cfg = do
       let api = { guards: { headers: Guards.headers }, handlers: { foo: checkContentType } }
       withServer spec api do
         let client = mkGuardedClient cfg.clientOpts spec
-        res <- client.foo {}
+        res <- runExceptT $ client.foo {}
         bodyEquals "no content-type" res
     test "DELETE adds content-type if body is provided" do
       let
@@ -107,7 +108,7 @@ tests cfg = do
       let api = { guards: { headers: Guards.headers }, handlers: { foo: checkContentType } }
       withServer spec api do
         let client = mkGuardedClient cfg.clientOpts spec
-        res <- client.foo { body: "hello" }
+        res <- runExceptT $ client.foo { body: "hello" }
         bodyEquals ContentType.plain res
     test "DELETE omits content-type if body is not provided" do
       let
@@ -124,5 +125,5 @@ tests cfg = do
       let api = { guards: { headers: Guards.headers }, handlers: { foo: checkContentType } }
       withServer spec api do
         let client = mkGuardedClient cfg.clientOpts spec
-        res <- client.foo {}
+        res <- runExceptT $ client.foo {}
         bodyEquals "no content-type" res

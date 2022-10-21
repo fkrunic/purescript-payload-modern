@@ -175,8 +175,8 @@ instance queryableGetRoute ::
   ) =>
   Queryable (Route "GET" path (Record route)) basePath baseParams (Record payload) res where
   request _ _ _ opts reqOpts payload = do
-    urlQuery <- withExceptT URIEncodingError $ except $ encodeOptionalQuery (Proxy :: _ fullPath) (Proxy :: _ query) payload      
-    encodedUrlPath <- withExceptT URIEncodingError $ except $ encodeUrlWithParams opts (Proxy :: _ fullPath) (Proxy :: _ fullParamsList) payload
+    urlQuery <- except $ lmap URIEncodingError $ encodeOptionalQuery (Proxy :: _ fullPath) (Proxy :: _ query) payload      
+    encodedUrlPath <- except $ lmap URIEncodingError $ encodeUrlWithParams opts (Proxy :: _ fullPath) (Proxy :: _ fullParamsList) payload
     case encodedUrlPath of 
       Just urlPath -> do
         let 
@@ -184,172 +184,156 @@ instance queryableGetRoute ::
         makeRequest { method: GET, url, body: Nothing, headers: [], opts, reqOpts }
       Nothing ->  except $ Left $ URIEncodingError EmptyEncoding
 
--- else instance queryablePostRoute ::
---   ( Row.Union route DefaultRouteSpec mergedRoute
---   , Row.Nub mergedRoute routeWithDefaults
---   , TypeEquals (Record routeWithDefaults)
---       { response :: res
---       , params :: Record params
---       , query :: query
---       , body :: body
---       | r
---       }
---   , Row.Union baseParams params fullUrlParams
---   , Symbol.Append basePath path fullPath
---   , RowToList fullUrlParams fullParamsList
---   , EncodeUrlWithParams fullPath fullParamsList payload
---   , EncodeOptionalQuery fullPath query payload
---   , EncodeOptionalBody body payload
---   , HasContentType body
---   , DecodeResponse res
---   ) =>
---   Queryable (Route "POST" path (Record route)) basePath baseParams (Record payload) res where
---   request _ _ _ opts reqOpts payload = do
---     let
---       encodedUrlPath = encodeUrlWithParams opts (Proxy :: _ fullPath) (Proxy :: _ fullParamsList) payload
---     case encodedUrlPath of 
---       Just urlPath -> do 
---         let 
---           urlQuery =
---             encodeOptionalQuery (Proxy :: _ fullPath)
---               (Proxy :: _ query)
---               payload
---           url = urlPath <> urlQuery
---           body = encodeOptionalBody (Proxy :: _ body) payload
---           headers = maybe [] (\_ -> [ ContentType (MediaType (getContentType (Proxy :: _ body))) ]) body
---         makeRequest { method: POST, url, body, headers, opts, reqOpts }
---       Nothing -> pure $ Left URIEncodingError
+else instance queryablePostRoute ::
+  ( Row.Union route DefaultRouteSpec mergedRoute
+  , Row.Nub mergedRoute routeWithDefaults
+  , TypeEquals (Record routeWithDefaults)
+      { response :: res
+      , params :: Record params
+      , query :: query
+      , body :: body
+      | r
+      }
+  , Row.Union baseParams params fullUrlParams
+  , Symbol.Append basePath path fullPath
+  , RowToList fullUrlParams fullParamsList
+  , EncodeUrlWithParams fullPath fullParamsList payload
+  , EncodeOptionalQuery fullPath query payload
+  , EncodeOptionalBody body payload
+  , HasContentType body
+  , DecodeResponse res
+  ) =>
+  Queryable (Route "POST" path (Record route)) basePath baseParams (Record payload) res where
+  request _ _ _ opts reqOpts payload = do
+    encodedUrlPath <- except $ lmap URIEncodingError $ encodeUrlWithParams opts (Proxy :: _ fullPath) (Proxy :: _ fullParamsList) payload
+    urlQuery <- except $ lmap URIEncodingError $ encodeOptionalQuery (Proxy :: _ fullPath) (Proxy :: _ query) payload    
+    case encodedUrlPath of 
+      Just urlPath -> do 
+        let 
+          url = urlPath <> urlQuery
+          body = encodeOptionalBody (Proxy :: _ body) payload
+          headers = maybe [] (\_ -> [ ContentType (MediaType (getContentType (Proxy :: _ body))) ]) body
+        makeRequest { method: POST, url, body, headers, opts, reqOpts }
+      Nothing -> except $ Left $ URIEncodingError EmptyEncoding
 
--- else instance queryableHeadRoute ::    
---   ( Row.Lacks "body" route
---   , Row.Lacks "response" route
---   , Row.Union route DefaultRouteSpec mergedRoute
---   , Row.Nub mergedRoute routeWithDefaults
---   , TypeEquals (Record routeWithDefaults)
---       { params :: Record params
---       , query :: query
---       | r
---       }
---   , Symbol.Append basePath path fullPath
---   , Row.Union baseParams params fullUrlParams
---   , RowToList fullUrlParams fullParamsList
---   , EncodeUrlWithParams fullPath fullParamsList payload
---   , EncodeOptionalQuery fullPath query payload
---   ) =>
---   Queryable (Route "HEAD" path (Record route)) basePath baseParams (Record payload) String where
---   request _ _ _ opts reqOpts payload = do
---     let
---       encodedUrlPath = encodeUrlWithParams opts (Proxy :: _ fullPath) (Proxy :: _ fullParamsList) payload
---     case encodedUrlPath of 
---       Just urlPath -> do
---         let
---           urlQuery =
---             encodeOptionalQuery (Proxy :: _ fullPath)
---               (Proxy :: _ query)
---               payload
---           url = urlPath <> urlQuery
---         makeRequest { method: HEAD, url, body: Nothing, headers: [], opts, reqOpts }
---       Nothing -> pure $ Left URIEncodingError
+else instance queryableHeadRoute ::    
+  ( Row.Lacks "body" route
+  , Row.Lacks "response" route
+  , Row.Union route DefaultRouteSpec mergedRoute
+  , Row.Nub mergedRoute routeWithDefaults
+  , TypeEquals (Record routeWithDefaults)
+      { params :: Record params
+      , query :: query
+      | r
+      }
+  , Symbol.Append basePath path fullPath
+  , Row.Union baseParams params fullUrlParams
+  , RowToList fullUrlParams fullParamsList
+  , EncodeUrlWithParams fullPath fullParamsList payload
+  , EncodeOptionalQuery fullPath query payload
+  ) =>
+  Queryable (Route "HEAD" path (Record route)) basePath baseParams (Record payload) String where
+  request _ _ _ opts reqOpts payload = do
+    encodedUrlPath <- except $ lmap URIEncodingError $ encodeUrlWithParams opts (Proxy :: _ fullPath) (Proxy :: _ fullParamsList) payload
+    urlQuery <- except $ lmap URIEncodingError $ encodeOptionalQuery (Proxy :: _ fullPath) (Proxy :: _ query) payload    
+    case encodedUrlPath of 
+      Just urlPath -> do
+        let
+          url = urlPath <> urlQuery
+        makeRequest { method: HEAD, url, body: Nothing, headers: [], opts, reqOpts }
+      Nothing -> except $ Left $ URIEncodingError EmptyEncoding
 
--- else instance queryablePutRoute ::
---   ( Row.Union route DefaultRouteSpec mergedRoute
---   , Row.Nub mergedRoute routeWithDefaults
---   , TypeEquals (Record routeWithDefaults)
---       { response :: res
---       , params :: Record params
---       , query :: query
---       , body :: body
---       | r
---       }
---   , Row.Union baseParams params fullUrlParams
---   , Symbol.Append basePath path fullPath
---   , RowToList fullUrlParams fullParamsList
---   , EncodeUrlWithParams fullPath fullParamsList payload
---   , EncodeOptionalQuery fullPath query payload
---   , EncodeOptionalBody body payload
---   , HasContentType body
---   , DecodeResponse res
---   ) =>
---   Queryable (Route "PUT" path (Record route)) basePath baseParams (Record payload) res where
---   request _ _ _ opts reqOpts payload = do
---     let
---       encodedUrlPath = encodeUrlWithParams opts (Proxy :: _ fullPath) (Proxy :: _ fullParamsList) payload
---     case encodedUrlPath of 
---       Just urlPath -> do 
---         let 
---           urlQuery =
---             encodeOptionalQuery (Proxy :: _ fullPath)
---               (Proxy :: _ query)
---               payload
---           url = urlPath <> urlQuery
---           body = encodeOptionalBody (Proxy :: _ body) payload
---           headers = maybe [] (\_ -> [ ContentType (MediaType (getContentType (Proxy :: _ body))) ]) body
---         makeRequest { method: PUT, url, body, headers, opts, reqOpts }
---       Nothing -> pure $ Left URIEncodingError
+else instance queryablePutRoute ::
+  ( Row.Union route DefaultRouteSpec mergedRoute
+  , Row.Nub mergedRoute routeWithDefaults
+  , TypeEquals (Record routeWithDefaults)
+      { response :: res
+      , params :: Record params
+      , query :: query
+      , body :: body
+      | r
+      }
+  , Row.Union baseParams params fullUrlParams
+  , Symbol.Append basePath path fullPath
+  , RowToList fullUrlParams fullParamsList
+  , EncodeUrlWithParams fullPath fullParamsList payload
+  , EncodeOptionalQuery fullPath query payload
+  , EncodeOptionalBody body payload
+  , HasContentType body
+  , DecodeResponse res
+  ) =>
+  Queryable (Route "PUT" path (Record route)) basePath baseParams (Record payload) res where
+  request _ _ _ opts reqOpts payload = do
+    encodedUrlPath <- except $ lmap URIEncodingError $ encodeUrlWithParams opts (Proxy :: _ fullPath) (Proxy :: _ fullParamsList) payload
+    urlQuery <- except $ lmap URIEncodingError $ encodeOptionalQuery (Proxy :: _ fullPath) (Proxy :: _ query) payload    
+    case encodedUrlPath of 
+      Just urlPath -> do 
+        let 
+          url = urlPath <> urlQuery
+          body = encodeOptionalBody (Proxy :: _ body) payload
+          headers = maybe [] (\_ -> [ ContentType (MediaType (getContentType (Proxy :: _ body))) ]) body
+        makeRequest { method: PUT, url, body, headers, opts, reqOpts }
+      Nothing -> except $ Left $ URIEncodingError EmptyEncoding
 
--- else instance queryableDeleteRoute ::
---   ( Row.Union route DefaultRouteSpec mergedRoute
---   , Row.Nub mergedRoute routeWithDefaults
---   , TypeEquals (Record routeWithDefaults)
---       { response :: res
---       , params :: Record params
---       , query :: query
---       , body :: body
---       | r
---       }
---   , Row.Union baseParams params fullUrlParams
---   , Symbol.Append basePath path fullPath
---   , DecodeResponse res
---   , RowToList fullUrlParams fullParamsList
---   , EncodeUrlWithParams fullPath fullParamsList payload
---   , EncodeOptionalQuery fullPath query payload
---   , EncodeOptionalBody body payload
---   , HasContentType body
---   ) =>
---   Queryable (Route "DELETE" path (Record route)) basePath baseParams (Record payload) res where
---   request _ _ _ opts reqOpts payload = do
---     urlQuery <- lmap URIEncodingError $ encodeOptionalQuery (Proxy :: _ fullPath) (Proxy :: _ query) payload    
---     encodedUrlPath <- encodeUrlWithParams opts (Proxy :: _ fullPath) (Proxy :: _ fullParamsList) payload
---     let 
---       body = encodeOptionalBody (Proxy :: _ body) payload
---     case encodedUrlPath of 
---       Just urlPath -> do 
---         let 
---           url = urlPath <> urlQuery
---           headers = maybe [] (\_ -> [ ContentType (MediaType (getContentType (Proxy :: _ body))) ]) body
---         makeRequest { method: DELETE, url, body, headers, opts, reqOpts }
---       Nothing -> pure $ Left $ URIEncodingError EmptyEncoding
+else instance queryableDeleteRoute ::
+  ( Row.Union route DefaultRouteSpec mergedRoute
+  , Row.Nub mergedRoute routeWithDefaults
+  , TypeEquals (Record routeWithDefaults)
+      { response :: res
+      , params :: Record params
+      , query :: query
+      , body :: body
+      | r
+      }
+  , Row.Union baseParams params fullUrlParams
+  , Symbol.Append basePath path fullPath
+  , DecodeResponse res
+  , RowToList fullUrlParams fullParamsList
+  , EncodeUrlWithParams fullPath fullParamsList payload
+  , EncodeOptionalQuery fullPath query payload
+  , EncodeOptionalBody body payload
+  , HasContentType body
+  ) =>
+  Queryable (Route "DELETE" path (Record route)) basePath baseParams (Record payload) res where
+  request _ _ _ opts reqOpts payload = do
+    urlQuery <- except $ lmap URIEncodingError $ encodeOptionalQuery (Proxy :: _ fullPath) (Proxy :: _ query) payload    
+    encodedUrlPath <- except $ lmap URIEncodingError $ encodeUrlWithParams opts (Proxy :: _ fullPath) (Proxy :: _ fullParamsList) payload
+    let 
+      body = encodeOptionalBody (Proxy :: _ body) payload
+    case encodedUrlPath of 
+      Just urlPath -> do 
+        let 
+          url = urlPath <> urlQuery
+          headers = maybe [] (\_ -> [ ContentType (MediaType (getContentType (Proxy :: _ body))) ]) body
+        makeRequest { method: DELETE, url, body, headers, opts, reqOpts }
+      Nothing -> except $ Left $ URIEncodingError EmptyEncoding
 
--- else instance queryableOptionsRoute ::
---   ( Row.Lacks "body" route
---   , Row.Union route DefaultRouteSpec mergedRoute
---   , Row.Nub mergedRoute routeWithDefaults
---   , TypeEquals (Record routeWithDefaults)
---       { response :: res
---       , params :: Record params
---       , query :: query
---       | r
---       }
---   , Row.Union baseParams params fullUrlParams
---   , Symbol.Append basePath path fullPath
---   , RowToList fullUrlParams fullParamsList
---   , EncodeUrlWithParams fullPath fullParamsList payload
---   , EncodeOptionalQuery fullPath query payload
---   , DecodeResponse res
---   ) =>
---   Queryable (Route "OPTIONS" path (Record route)) basePath baseParams (Record payload) res where
---   request _ _ _ opts reqOpts payload = do
---     let
---       encodedUrlPath = encodeUrlWithParams opts (Proxy :: _ fullPath) (Proxy :: _ fullParamsList) payload
---       urlQuery =
---         encodeOptionalQuery (Proxy :: _ fullPath)
---           (Proxy :: _ query)
---           payload
---     case encodedUrlPath of 
---       Just urlPath -> do
---         let url = urlPath <> urlQuery
---         makeRequest { method: OPTIONS, url, body: Nothing, headers: [], opts, reqOpts }
---       Nothing -> pure $ Left URIEncodingError
+else instance queryableOptionsRoute ::
+  ( Row.Lacks "body" route
+  , Row.Union route DefaultRouteSpec mergedRoute
+  , Row.Nub mergedRoute routeWithDefaults
+  , TypeEquals (Record routeWithDefaults)
+      { response :: res
+      , params :: Record params
+      , query :: query
+      | r
+      }
+  , Row.Union baseParams params fullUrlParams
+  , Symbol.Append basePath path fullPath
+  , RowToList fullUrlParams fullParamsList
+  , EncodeUrlWithParams fullPath fullParamsList payload
+  , EncodeOptionalQuery fullPath query payload
+  , DecodeResponse res
+  ) =>
+  Queryable (Route "OPTIONS" path (Record route)) basePath baseParams (Record payload) res where
+  request _ _ _ opts reqOpts payload = do
+    encodedUrlPath <- except $ lmap URIEncodingError $ encodeUrlWithParams opts (Proxy :: _ fullPath) (Proxy :: _ fullParamsList) payload
+    urlQuery <- except $ lmap URIEncodingError $ encodeOptionalQuery (Proxy :: _ fullPath) (Proxy :: _ query) payload
+    case encodedUrlPath of 
+      Just urlPath -> do
+        let url = urlPath <> urlQuery
+        makeRequest { method: OPTIONS, url, body: Nothing, headers: [], opts, reqOpts }
+      Nothing -> except $ Left $ URIEncodingError EmptyEncoding
 
 class EncodeOptionalBody (body :: Type) (payload :: Row Type) where
   encodeOptionalBody ::

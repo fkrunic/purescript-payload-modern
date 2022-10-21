@@ -1,6 +1,7 @@
 module Test.IntegrationTests.Client.Errors where
 
 import Prelude
+import Control.Monad.Except.Trans (runExceptT)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect.Aff (error, throwError)
@@ -24,7 +25,7 @@ tests cfg = do
             let handlers = { foo: \_ -> pure (Left "Fail!" :: Either String { id :: Int }) }
             withRoutes spec handlers do
               let client = mkClient cfg.clientOpts spec
-              res <- client.foo {}
+              res <- runExceptT $ client.foo {}
               case res of
                 Left (StatusError { response: Response response }) -> Assert.equal 500 response.status.code
                 r -> throwError (error $ "Expected StatusError but received " <> show r)
@@ -34,7 +35,7 @@ tests cfg = do
             let handlers = { foo: \_ -> pure (Left "Fail!" :: Either String { id :: Int }) }
             withRoutes spec handlers do
               let client = mkClient cfg.clientOpts spec
-              res <- client.foo {}
+              res <- runExceptT $ client.foo {}
               case res of
                 Left (StatusError { response: Response response }) -> do
                   Assert.equal (Just "5") (Headers.lookup "content-length" response.headers)
@@ -45,7 +46,7 @@ tests cfg = do
             let handlers = { foo: \_ -> pure (Left "Fail!" :: Either String { id :: Int }) }
             withRoutes spec handlers do
               let client = mkClient cfg.clientOpts spec
-              res <- client.foo {}
+              res <- runExceptT $ client.foo {}
               case res of
                 Left (StatusError { response: Response response }) -> do
                   Assert.equal "Fail!" response.body
@@ -57,7 +58,7 @@ tests cfg = do
             let handlers = { foo: \_ -> pure ((Left (Response.ok "Fail!")) :: Either (Response String) { id :: Int }) }
             withRoutes spec handlers do
               let client = mkClient cfg.clientOpts spec
-              res <- client.foo {}
+              res <- runExceptT $ client.foo {}
               case res of
                 Left (DecodeError { response: Response response }) -> do
                   Assert.equal "Fail!" response.body

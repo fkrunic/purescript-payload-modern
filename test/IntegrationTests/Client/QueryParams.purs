@@ -1,6 +1,7 @@
 module Test.IntegrationTests.Client.QueryParams where
 
 import Prelude
+import Control.Monad.Except.Trans (runExceptT)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Foreign.Object (Object)
@@ -29,7 +30,7 @@ tests cfg = do
           let handlers = { foo: \{ query: { secret } } -> pure secret }
           withRoutes spec handlers do
             let client = mkClient cfg.clientOpts spec
-            res <- client.foo { query: { secret: "something" } }
+            res <- runExceptT $ client.foo { query: { secret: "something" } }
             bodyEquals "something" res
     test "succeeds with optional query key provided"
       $ do
@@ -51,7 +52,7 @@ tests cfg = do
               }
           withRoutes spec handlers do
             let client = mkClient cfg.clientOpts spec
-            res <- client.foo { query: { secret: Just "something" } }
+            res <- runExceptT $ client.foo { query: { secret: Just "something" } }
             bodyEquals "something" res
     test "succeeds with optional query key omitted"
       $ do
@@ -73,7 +74,7 @@ tests cfg = do
               }
           withRoutes spec handlers do
             let client = mkClient cfg.clientOpts spec
-            res <- client.foo { query: { secret: Nothing } }
+            res <- runExceptT $ client.foo { query: { secret: Nothing } }
             bodyEquals "no secret" res
     test "succeeds with multimatch"
       $ do
@@ -89,7 +90,7 @@ tests cfg = do
           let handlers = { foo: \{ query: { any } } -> pure (show any) }
           withRoutes spec handlers do
             let client = mkClient cfg.clientOpts spec
-            res <- client.foo { query: { any: Object.fromFoldable [ Tuple "foo" [ "foo1" ], Tuple "bar" [ "bar1" ] ] } }
+            res <- runExceptT $ client.foo { query: { any: Object.fromFoldable [ Tuple "foo" [ "foo1" ], Tuple "bar" [ "bar1" ] ] } }
             let expected = "(fromFoldable [(Tuple \"foo\" [\"foo1\"]),(Tuple \"bar\" [\"bar1\"])])"
             bodyEquals expected res
     test "GET succeeds"
@@ -106,7 +107,7 @@ tests cfg = do
           let handlers = { foo: \{ query: { key, rest } } -> pure $ "key " <> show key <> ", " <> show rest }
           withRoutes spec handlers do
             let client = mkClient cfg.clientOpts spec
-            res <- client.foo { query: { key: 1, rest: Object.fromFoldable [ Tuple "a" [ "a" ] ] } }
+            res <- runExceptT $ client.foo { query: { key: 1, rest: Object.fromFoldable [ Tuple "a" [ "a" ] ] } }
             let expected = "key 1, (fromFoldable [(Tuple \"a\" [\"a\"])])"
             bodyEquals expected res
     test "POST succeeds"
@@ -124,7 +125,7 @@ tests cfg = do
           let handlers = { foo: \({ query: { key, rest } }) -> pure $ "key " <> show key <> ", " <> show rest }
           withRoutes spec handlers do
             let client = mkClient cfg.clientOpts spec
-            res <- client.foo { body: "_", query: { key: 1, rest: Object.fromFoldable [ Tuple "a" [ "a" ] ] } }
+            res <- runExceptT $ client.foo { body: "_", query: { key: 1, rest: Object.fromFoldable [ Tuple "a" [ "a" ] ] } }
             let expected = "key 1, (fromFoldable [(Tuple \"a\" [\"a\"])])"
             bodyEquals expected res
     test "HEAD succeeds"
@@ -139,7 +140,7 @@ tests cfg = do
           let handlers = { foo: \{ query: _ } -> pure $ Empty }
           withRoutes spec handlers do
             let client = mkClient cfg.clientOpts spec
-            res <- client.foo { query: { key: 1, rest: Object.fromFoldable [ Tuple "a" [ "a" ] ] } }
+            res <- runExceptT $ client.foo { query: { key: 1, rest: Object.fromFoldable [ Tuple "a" [ "a" ] ] } }
             bodyEquals "" res
     test "DELETE succeeds"
       $ do
@@ -156,7 +157,7 @@ tests cfg = do
           let handlers = { foo: \({ query: { key, rest } }) -> pure $ "key " <> show key <> ", " <> show rest }
           withRoutes spec handlers do
             let client = mkClient cfg.clientOpts spec
-            res <- client.foo { body: "_", query: { key: 1, rest: Object.fromFoldable [ Tuple "a" [ "a" ] ] } }
+            res <- runExceptT $ client.foo { body: "_", query: { key: 1, rest: Object.fromFoldable [ Tuple "a" [ "a" ] ] } }
             let expected = "key 1, (fromFoldable [(Tuple \"a\" [\"a\"])])"
             bodyEquals expected res
     test "PUT succeeds"
@@ -174,6 +175,6 @@ tests cfg = do
           let handlers = { foo: \({ query: { key, rest } }) -> pure $ "key " <> show key <> ", " <> show rest }
           withRoutes spec handlers do
             let client = mkClient cfg.clientOpts spec
-            res <- client.foo { body: "_", query: { key: 1, rest: Object.fromFoldable [ Tuple "a" [ "a" ] ] } }
+            res <- runExceptT $ client.foo { body: "_", query: { key: 1, rest: Object.fromFoldable [ Tuple "a" [ "a" ] ] } }
             let expected = "key 1, (fromFoldable [(Tuple \"a\" [\"a\"])])"
             bodyEquals expected res

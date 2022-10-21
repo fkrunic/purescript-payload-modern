@@ -1,6 +1,7 @@
 module Test.IntegrationTests.Client.Statuses where
 
 import Prelude
+import Control.Monad.Except.Trans (runExceptT)
 import Data.Either (Either(..))
 import Effect.Aff (Aff, error, throwError)
 import Payload.Client (ClientError(..), ClientResponse, mkClient)
@@ -28,7 +29,7 @@ tests cfg = do
           let handlers = { foo: \_ -> pure { id: 123 } }
           withRoutes spec handlers do
             let client = mkClient cfg.clientOpts spec
-            res <- client.foo {}
+            res <- runExceptT $ client.foo {}
             bodyEquals { id: 123 } res
     test "client decodes overridden 201 Created response as response type"
       $ do
@@ -36,7 +37,7 @@ tests cfg = do
           let handlers = { foo: \_ -> pure (Response.created { id: 123 }) }
           withRoutes spec handlers do
             let client = mkClient cfg.clientOpts spec
-            res <- client.foo {}
+            res <- runExceptT $ client.foo {}
             bodyEquals { id: 123 } res
     test "client returns overridden 400 Bad Request response as error"
       $ do
@@ -44,6 +45,6 @@ tests cfg = do
           let handlers = { foo: \_ -> pure (Response.badRequest { id: 123 }) }
           withRoutes spec handlers do
             let client = mkClient cfg.clientOpts spec
-            res <- client.foo {}
+            res <- runExceptT $ client.foo {}
             errorRes <- assertErrorRes res
             Assert.assert "Expected status error" (isStatusError errorRes)

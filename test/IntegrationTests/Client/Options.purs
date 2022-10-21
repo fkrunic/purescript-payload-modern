@@ -1,6 +1,7 @@
 module Test.IntegrationTests.Client.Options where
 
 import Prelude
+import Control.Monad.Except.Trans (runExceptT)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff)
@@ -39,7 +40,7 @@ tests cfg = do
         let opts = cfg.clientOpts { extraHeaders = Headers.fromFoldable [ Tuple "Accept" "some content type" ] }
         withServer spec api do
           let client = mkGuardedClient opts spec
-          res <- client.foo {}
+          res <- runExceptT $ client.foo {}
           bodyEquals "some content type" res
       test "single endpoint header overrides client extraHeader" do
         let
@@ -58,5 +59,5 @@ tests cfg = do
         withServer spec api do
           let client = mkGuardedClient opts spec
           let reqOpts = defaultReqOpts { extraHeaders = Headers.fromFoldable [ Tuple "Accept" "overridden value" ] }
-          res <- client.foo_ reqOpts {}
+          res <- runExceptT $ client.foo_ reqOpts {}
           bodyEquals "overridden value" res
