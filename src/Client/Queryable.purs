@@ -1,7 +1,6 @@
 module Payload.Client.Queryable where
 
 import Prelude
-import Payload.Client.QueryParams
 
 import Affjax.Node as AX
 import Affjax.RequestBody as RequestBody
@@ -9,7 +8,7 @@ import Affjax.RequestHeader (RequestHeader(..))
 import Affjax.ResponseFormat as ResponseFormat
 import Affjax.ResponseHeader (ResponseHeader(..))
 import Affjax.StatusCode (StatusCode(..))
-import Control.Monad.Except.Trans (ExceptT(..), except, runExceptT, withExceptT)
+import Control.Monad.Except.Trans (ExceptT(..), except, withExceptT)
 import Data.Array as Array
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
@@ -25,6 +24,7 @@ import Payload.Client.Internal.Query (class EncodeQuery, encodeQuery)
 import Payload.Client.Internal.Url as PayloadUrl
 import Payload.Client.Options (Options, RequestOptions)
 import Payload.Client.Response (ClientError(..), ClientResponse)
+import Payload.Client.QueryParams (EncodingError(..))
 import Payload.ContentType (class HasContentType, getContentType)
 import Payload.Headers (Headers)
 import Payload.Headers as Headers
@@ -45,7 +45,6 @@ type ClientFnWithOptions payload body
 
 type ClientFn payload body
   = payload -> ExceptT ClientError Aff (Response body)
-  -- = payload -> Aff (ClientResponse body)
 
 class Queryable route (basePath :: Symbol) (baseParams :: Row Type) payload res | route baseParams basePath -> payload
 , route -> res where
@@ -156,6 +155,15 @@ appendHeaders headers req = req { headers = newHeaders }
   where
   newHeaders = req.headers <> (asAxHeader <$> Headers.toUnfoldable headers)
 
+
+-- buildURL :: forall fullPath fullParamList query. 
+-- buildURL opts payload = do
+--   encodedUrlPath <- except $ lmap URIEncodingError $ encodeUrlWithParams opts (Proxy :: _ fullPath) (Proxy :: _ fullParamsList) payload
+--   urlQuery <- except $ lmap URIEncodingError $ encodeOptionalQuery (Proxy :: _ fullPath) (Proxy :: _ query) payload      
+--   case encodedUrlPath of 
+--     Just urlPath -> except $ Right $ urlPath <> urlQuery   
+--     Nothing ->  except $ Left $ URIEncodingError EmptyEncoding 
+
 instance queryableGetRoute ::
   ( Row.Lacks "body" route
   , Row.Union route DefaultRouteSpec mergedRoute
@@ -175,8 +183,8 @@ instance queryableGetRoute ::
   ) =>
   Queryable (Route "GET" path (Record route)) basePath baseParams (Record payload) res where
   request _ _ _ opts reqOpts payload = do
-    urlQuery <- except $ lmap URIEncodingError $ encodeOptionalQuery (Proxy :: _ fullPath) (Proxy :: _ query) payload      
     encodedUrlPath <- except $ lmap URIEncodingError $ encodeUrlWithParams opts (Proxy :: _ fullPath) (Proxy :: _ fullParamsList) payload
+    urlQuery <- except $ lmap URIEncodingError $ encodeOptionalQuery (Proxy :: _ fullPath) (Proxy :: _ query) payload      
     case encodedUrlPath of 
       Just urlPath -> do
         let 
